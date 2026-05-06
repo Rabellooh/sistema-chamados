@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Sistema de Chamados</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+
+<body>
+
+<div class="sidebar">
+    <h3>Chamados TI</h3>
+
+    <a href="/">Dashboard</a>
+    <a href="/chamados">Chamados</a>
+    <a href="/novo">Novo Chamado</a>
+    <a href="/logout">Sair</a>
+</div>
+
+<div class="content">
+    {% block content %}{% endblock %}
+</div>
+
+</body>
+</html>

@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Login</title>
+</head>
+<body style="background:#0f172a; color:white; text-align:center; margin-top:100px;">
+
+<h2>Login</h2>
+
+<form method="POST">
+    <select name="usuario_id">
+        {% for u in usuarios %}
+        <option value="{{ u.id }}">{{ u.nome }} ({{ u.tipo }})</option>
+        {% endfor %}
+    </select>
+
+    <br><br>
+    <button>Entrar</button>
+</form>
+
+</body>
+</html>

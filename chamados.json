@@ -1,0 +1,34 @@
+[
+    {
+        "id": 1,
+        "usuario": "Jo\u00c3\u00a3o",
+        "maquina": "35",
+        "descricao": "Teste para tec Gabriel",
+        "status": "resolvido",
+        "tecnico": "Gabriel",
+        "tecnicos": [
+            "Marcelo"
+        ]
+    },
+    {
+        "id": 2,
+        "usuario": "Paulo",
+        "maquina": "41",
+        "descricao": "Teste 2",
+        "status": "em_andamento",
+        "tecnicos": [
+            "Gabriel"
+        ]
+    },
+    {
+        "id": 3,
+        "usuario": "Paulo",
+        "setor": "Hunter",
+        "maquina": "38 Lenovo",
+        "descricao": "Travamento ",
+        "status": "em_andamento",
+        "tecnicos": [
+            "Gabriel"
+        ]
+    }
+]

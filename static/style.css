@@ -1,0 +1,190 @@
+body {
+    background: #0f172a;
+    color: #e2e8f0;
+    font-family: Arial;
+    margin: 0;
+}
+
+/* SIDEBAR */
+.sidebar {
+    width: 220px;
+    height: 100vh;
+    position: fixed;
+    background: #020617;
+    padding: 20px;
+    top: 0;
+    left: 0;
+}
+
+.sidebar h3 {
+    color: #38bdf8;
+}
+
+.sidebar a {
+    display: block;
+    padding: 10px;
+    color: #cbd5f5;
+    border-radius: 6px;
+    text-decoration: none;
+    margin-bottom: 5px;
+}
+
+.sidebar a:hover {
+    background: #1e293b;
+}
+
+/* CONTEÚDO */
+.content {
+    margin-left: 240px;
+    padding: 30px;
+    max-width: 1100px;
+}
+
+/* CARDS */
+.card {
+    background: #020617;
+    padding: 20px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+}
+
+/* TABELA */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #020617;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+th {
+    background: #1e293b;
+    padding: 10px;
+    text-align: left;
+}
+
+td {
+    padding: 10px;
+    border-bottom: 1px solid #1e293b;
+}
+
+/* STATUS */
+.badge {
+    padding: 5px 10px;
+    border-radius: 6px;
+}
+
+.aberto { background: #ef4444; }
+.andamento { background: #facc15; color: black; }
+.resolvido { background: #22c55e; }
+
+/* CHAT */
+.chat {
+    background: #020617;
+    padding: 15px;
+    border-radius: 10px;
+    height: 350px;
+    overflow-y: auto;
+}
+
+.msg {
+    background: #1e293b;
+    padding: 10px;
+    border-radius: 6px;
+    margin-bottom: 10px;
+}
+
+/* INPUTS */
+input, select {
+    padding: 10px;
+    border-radius: 6px;
+    border: none;
+    width: 100%;
+    margin-bottom: 10px;
+}
+
+/* BOTÕES */
+button {
+    padding: 10px 15px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+}
+
+.btn-primary { background: #38bdf8; }
+.btn-warning { background: #facc15; color: black; }
+.btn-success { background: #22c55e; }
+/* GRID */
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 20px;
+}
+
+/* CARD BASE */
+.card {
+    background: #020617;
+    padding: 18px;
+    border-radius: 10px;
+}
+
+/* STAT */
+.stat span {
+    font-size: 14px;
+    color: #94a3b8;
+}
+
+.stat h1 {
+    margin-top: 8px;
+    font-size: 34px;
+    font-weight: 600;
+}
+
+/* CORES SOMENTE NO TEXTO */
+.txt-aberto {
+    color: #ef4444;
+}
+
+.txt-andamento {
+    color: #facc15;
+}
+
+.txt-resolvido {
+    color: #22c55e;
+}
+
+/* HOVER SUAVE */
+.card:hover {
+    transform: translateY(-2px);
+    transition: 0.2s;
+}
+/* FORMULÁRIO */
+
+.form-row {
+    display: flex;
+    gap: 15px;
+}
+
+.form-group {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+label {
+    margin-bottom: 5px;
+    font-size: 14px;
+    color: #94a3b8;
+}
+
+input, textarea {
+    padding: 10px;
+    border-radius: 6px;
+    border: none;
+    background: #1e293b;
+    color: #e2e8f0;
+}
+
+textarea {
+    resize: none;
+}

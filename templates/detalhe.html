@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h3>Chamado #{{ chamado.id }}</h3>
+
+<div class="card-custom mb-3">
+<p><b>Usuário:</b> {{ chamado.usuario }}</p>
+<p><b>Máquina:</b> {{ chamado.maquina }}</p>
+<p><b>Status:</b>
+{% if chamado.status == "aberto" %}
+<span class="badge bg-danger">Aberto</span>
+{% elif chamado.status == "em_andamento" %}
+<span class="badge bg-warning text-dark">Em andamento</span>
+{% elif chamado.status == "resolvido" %}
+<span class="badge bg-success">Resolvido</span>
+{% endif %}
+</p>
+</div>
+
+<div class="card-custom mb-3">
+<h5>Descrição</h5>
+<p>{{ chamado.descricao }}</p>
+</div>
+
+<div class="card-custom">
+<h5>Chat</h5>
+
+<div class="chat-box">
+
+{% for m in mensagens %}
+<div class="msg {% if m.autor == usuario.nome %}msg-ti{% else %}msg-user{% endif %}">
+<b>{{ m.autor }}</b><br>
+{{ m.texto }}
+
+{% if m.arquivo %}
+<br>
+<img src="/uploads/{{ m.arquivo }}" style="max-width:150px;">
+{% endif %}
+</div>
+{% endfor %}
+
+</div>
+
+<form method="POST" enctype="multipart/form-data" class="mt-3">
+<input name="mensagem" class="form-control mb-2" placeholder="Digite uma mensagem...">
+<input type="file" name="arquivo" class="form-control mb-2">
+<button class="btn btn-primary">Enviar</button>
+</form>
+
+</div>
+
+{% endblock %}

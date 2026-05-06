@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h2 style="margin-bottom:20px;">Dashboard</h2>
+
+<div class="grid">
+
+    <div class="card stat">
+        <span>Total de chamados</span>
+        <h1>{{ total }}</h1>
+    </div>
+
+    <div class="card stat">
+        <span>Abertos</span>
+        <h1 class="txt-aberto">{{ abertos }}</h1>
+    </div>
+
+    <div class="card stat">
+        <span>Em andamento</span>
+        <h1 class="txt-andamento">{{ andamento }}</h1>
+    </div>
+
+    <div class="card stat">
+        <span>Resolvidos</span>
+        <h1 class="txt-resolvido">{{ resolvidos }}</h1>
+    </div>
+
+</div>
+
+{% endblock %}
