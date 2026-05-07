@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h1 class="titulo">
+    Confirmar Exclusão
+</h1>
+
+<div class="card">
+
+    <p style="margin-bottom: 20px;">
+
+        Tem certeza que deseja excluir
+        o chamado:
+
+        <strong>
+            #{{ chamado.id }}
+        </strong>
+
+        ?
+
+    </p>
+
+    <div class="acoes">
+
+        <form method="POST">
+
+            <button class="btn-danger">
+                Confirmar Exclusão
+            </button>
+
+        </form>
+
+        <a
+            href="/chamados"
+            class="btn-warning"
+        >
+            Cancelar
+        </a>
+
+    </div>
+
+</div>
+
+{% endblock %}

@@ -2,42 +2,69 @@
 
 {% block content %}
 
-<h2>Chamados</h2>
+<h1 class="titulo">
+    Chamados
+</h1>
 
-<table>
-
-<tr>
-<th>ID</th>
-<th>Usuário</th>
-<th>Máquina</th>
-<th>Status</th>
-<th>Ação</th>
-</tr>
+<div class="lista-chamados">
 
 {% for c in chamados %}
-<tr>
 
-<td><a href="/chamado/{{ c.id }}">#{{ c.id }}</a></td>
-<td>{{ c.usuario }}</td>
-<td>{{ c.maquina }}</td>
+<a
+    href="/chamado/{{ c.id }}"
+    class="card chamado-card"
+>
 
-<td>
-{% if c.status == "aberto" %}
-<span class="badge aberto">Aberto</span>
-{% elif c.status == "em_andamento" %}
-<span class="badge andamento">Andamento</span>
-{% else %}
-<span class="badge resolvido">Resolvido</span>
-{% endif %}
-</td>
+    <div>
 
-<td>
-<a href="/assumir/{{ c.id }}">Entrar</a>
-</td>
+        <h3>
 
-</tr>
+            #{{ c.id }}
+            —
+            {{ c.usuario }}
+
+        </h3>
+
+        <p>
+
+            {{ c.setor }}
+
+            •
+
+            {{ c.maquina }}
+
+        </p>
+
+    </div>
+
+    <div>
+
+        {% if c.status == "aberto" %}
+
+        <span class="badge aberto">
+            Aberto
+        </span>
+
+        {% elif c.status == "em_andamento" %}
+
+        <span class="badge andamento">
+            Em andamento
+        </span>
+
+        {% else %}
+
+        <span class="badge resolvido">
+            Resolvido
+        </span>
+
+        {% endif %}
+
+    </div>
+
+</a>
+
 {% endfor %}
 
-</table>
+</div>
 
 {% endblock %}

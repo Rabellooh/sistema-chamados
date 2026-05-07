@@ -2,34 +2,87 @@
 
 {% block content %}
 
-<h2 style="margin-bottom:20px;">Novo Chamado</h2>
+<h1 class="titulo">
+    Novo Chamado
+</h1>
 
 <div class="card">
 
-<form method="POST">
+<form method="POST" enctype="multipart/form-data">
 
-    <!-- LINHA 1 -->
     <div class="form-row">
-        
-        <div class="form-group">
-            <label>Setor</label>
-            <input type="text" name="setor" placeholder="Ex: Financeiro" required>
+
+        <div class="campo">
+
+            <label>
+                Setor
+            </label>
+
+            <input
+                type="text"
+                name="setor"
+                required
+            >
+
         </div>
 
-        <div class="form-group">
-            <label>Máquina</label>
-            <input type="text" name="maquina" placeholder="Ex: PC-01" required>
+        <div class="campo">
+
+            <label>
+                Máquina
+            </label>
+
+            <input
+                type="text"
+                name="maquina"
+                required
+            >
+
         </div>
 
     </div>
 
-    <!-- DESCRIÇÃO -->
-    <div class="form-group">
-        <label>Descrição do problema</label>
-        <textarea name="descricao" rows="6" placeholder="Descreva o problema..." required></textarea>
+    <div class="campo">
+
+        <label>
+            Descrição
+        </label>
+
+        <textarea
+            name="descricao"
+            rows="8"
+            required
+        ></textarea>
+
     </div>
 
-    <button class="btn-primary">Abrir Chamado</button>
+    <div class="campo">
+
+        <label>
+            Print (Opcional)
+        </label>
+
+        <input
+            type="file"
+            name="arquivo"
+        >
+
+    </div>
+
+    <div class="acoes">
+
+        <button class="btn-primary">
+            Abrir Chamado
+        </button>
+
+        <a
+            href="/"
+            class="btn-warning"
+        >
+            Cancelar
+        </a>
+
+    </div>
 
 </form>
 

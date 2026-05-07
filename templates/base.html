@@ -1,24 +1,123 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt-br">
+
 <head>
-    <title>Sistema de Chamados</title>
-    <link rel="stylesheet" href="/static/style.css">
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>
+        Sistema de Chamados
+    </title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='style.css') }}"
+    >
+
 </head>
 
-<body>
+<body id="body">
 
-<div class="sidebar">
-    <h3>Chamados TI</h3>
+{% if session.usuario %}
 
-    <a href="/">Dashboard</a>
-    <a href="/chamados">Chamados</a>
-    <a href="/novo">Novo Chamado</a>
-    <a href="/logout">Sair</a>
+<div class="topbar">
+
+    <h2>
+        Sistema de Chamados TI
+    </h2>
+
+    <div class="topbar-actions">
+
+        <span>
+            {{ session.usuario.nome }}
+        </span>
+
+        <a href="/">
+            Dashboard
+        </a>
+
+        <a href="/chamados">
+            Chamados
+        </a>
+
+        {% if session.usuario.tipo == "colaborador" %}
+
+        <a href="/novo">
+            Abrir Chamado
+        </a>
+
+        {% endif %}
+
+        <button
+            onclick="toggleDarkMode()"
+            class="btn-dark"
+        >
+            🌙
+        </button>
+
+        <a href="/logout">
+            Sair
+        </a>
+
+    </div>
+
 </div>
 
-<div class="content">
-    {% block content %}{% endblock %}
+{% endif %}
+
+<div class="container">
+
+    {% block content %}
+    {% endblock %}
+
 </div>
+
+<script>
+
+function toggleDarkMode() {
+
+    const body = document.getElementById("body");
+
+    body.classList.toggle("dark-mode");
+
+    if (
+        body.classList.contains("dark-mode")
+    ) {
+
+        localStorage.setItem(
+            "darkmode",
+            "on"
+        );
+
+    } else {
+
+        localStorage.setItem(
+            "darkmode",
+            "off"
+        );
+    }
+}
+
+window.onload = () => {
+
+    const darkmode =
+        localStorage.getItem("darkmode");
+
+    if (darkmode === "on") {
+
+        document
+            .getElementById("body")
+            .classList.add("dark-mode");
+    }
+};
+
+</script>
 
 </body>
+
 </html>

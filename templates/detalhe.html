@@ -2,51 +2,312 @@
 
 {% block content %}
 
-<h3>Chamado #{{ chamado.id }}</h3>
+<h1 class="titulo">
+    Chamado #{{ chamado.id }}
+</h1>
 
-<div class="card-custom mb-3">
-<p><b>Usuário:</b> {{ chamado.usuario }}</p>
-<p><b>Máquina:</b> {{ chamado.maquina }}</p>
-<p><b>Status:</b>
-{% if chamado.status == "aberto" %}
-<span class="badge bg-danger">Aberto</span>
-{% elif chamado.status == "em_andamento" %}
-<span class="badge bg-warning text-dark">Em andamento</span>
-{% elif chamado.status == "resolvido" %}
-<span class="badge bg-success">Resolvido</span>
-{% endif %}
-</p>
+<div class="card detalhe-box">
+    {% if session.usuario.tipo == "ti" %}
+
+<div class="card">
+
+    <h2 style="margin-bottom:20px;">
+        Completar / Corrigir Informações
+    </h2>
+
+    <form
+        method="POST"
+        action="/editar_chamado/{{ chamado.id }}"
+    >
+
+        <div class="form-grid">
+
+            <div>
+
+                <label>
+                    Setor
+                </label>
+
+                <input
+                    type="text"
+                    name="setor"
+                    value="{{ chamado.setor }}"
+                >
+
+            </div>
+
+            <div>
+
+                <label>
+                    ID da Máquina
+                </label>
+
+                <input
+                    type="text"
+                    name="maquina"
+                    value="{{ chamado.maquina }}"
+                >
+
+            </div>
+
+            <div>
+
+                <label>
+                    Categoria
+                </label>
+
+                <select name="categoria">
+
+                    <option value="">
+                        Selecionar
+                    </option>
+
+                    <option
+                        value="Hardware"
+                        {% if chamado.categoria == "Hardware" %}
+                        selected
+                        {% endif %}
+                    >
+                        Hardware
+                    </option>
+
+                    <option
+                        value="Software"
+                        {% if chamado.categoria == "Software" %}
+                        selected
+                        {% endif %}
+                    >
+                        Software
+                    </option>
+
+                    <option
+                        value="Acesso"
+                        {% if chamado.categoria == "Acesso" %}
+                        selected
+                        {% endif %}
+                    >
+                        Acesso
+                    </option>
+
+                </select>
+
+            </div>
+
+            <div>
+
+                <label>
+                    Solução Aplicada
+                </label>
+
+                <input
+                    type="text"
+                    name="solucao"
+                    value="{{ chamado.solucao }}"
+                >
+
+            </div>
+
+        </div>
+
+        <br>
+
+        <button class="btn-success">
+
+            Salvar Alterações
+
+        </button>
+
+    </form>
+
 </div>
 
-<div class="card-custom mb-3">
-<h5>Descrição</h5>
-<p>{{ chamado.descricao }}</p>
-</div>
-
-<div class="card-custom">
-<h5>Chat</h5>
-
-<div class="chat-box">
-
-{% for m in mensagens %}
-<div class="msg {% if m.autor == usuario.nome %}msg-ti{% else %}msg-user{% endif %}">
-<b>{{ m.autor }}</b><br>
-{{ m.texto }}
-
-{% if m.arquivo %}
 <br>
-<img src="/uploads/{{ m.arquivo }}" style="max-width:150px;">
+
 {% endif %}
-</div>
-{% endfor %}
+
+    <h3>Colaborador</h3>
+    <p>{{ chamado.usuario }}</p>
+
+    <h3>Setor</h3>
+    <p>{{ chamado.setor }}</p>
+
+    <h3>Máquina</h3>
+    <p>{{ chamado.maquina }}</p>
+
+    <h3>Descrição</h3>
+    <p>{{ chamado.descricao }}</p>
+
+    <h3>Status</h3>
+
+    {% if chamado.status == "aberto" %}
+        <span class="badge aberto">Aberto</span>
+    {% elif chamado.status == "em_andamento" %}
+        <span class="badge andamento">Em andamento</span>
+    {% else %}
+        <span class="badge resolvido">Resolvido</span>
+    {% endif %}
+
+    <h3>Técnicos</h3>
+
+    <p>
+
+    {% if chamado.tecnicos %}
+
+        {{ chamado.tecnicos | join(", ") }}
+
+    {% else %}
+
+        Nenhum técnico
+
+    {% endif %}
+
+    </p>
+
+    <h3>Categoria</h3>
+
+    <form
+        action="/categoria/{{ chamado.id }}"
+        method="POST"
+        class="categoria-box"
+    >
+
+        <select name="categoria">
+
+            <option>Hardware</option>
+            <option>Software</option>
+            <option>Acesso</option>
+
+        </select>
+
+        <button class="btn-primary">
+            Salvar
+        </button>
+
+    </form>
+
+    <h3>Solução Aplicada</h3>
+
+    <form
+        action="/solucao/{{ chamado.id }}"
+        method="POST"
+    >
+
+        <textarea
+            name="solucao"
+            class="solucao-input"
+        >{{ chamado.solucao }}</textarea>
+
+        <button class="btn-success">
+            Salvar Solução
+        </button>
+
+    </form>
+
+    {% if chamado.arquivo %}
+
+    <h3>Arquivo Inicial</h3>
+
+    <a
+        href="/{{ chamado.arquivo }}"
+        target="_blank"
+        class="btn-warning"
+    >
+        Abrir Arquivo
+    </a>
+
+    {% endif %}
 
 </div>
 
-<form method="POST" enctype="multipart/form-data" class="mt-3">
-<input name="mensagem" class="form-control mb-2" placeholder="Digite uma mensagem...">
-<input type="file" name="arquivo" class="form-control mb-2">
-<button class="btn btn-primary">Enviar</button>
-</form>
+
+<!-- CHAT -->
+
+<div class="card chat-box">
+
+    <h2>
+        Chat do Chamado
+    </h2>
+
+    <form
+        action="/mensagem/{{ chamado.id }}"
+        method="POST"
+        enctype="multipart/form-data"
+    >
+
+        <textarea
+            name="mensagem"
+            placeholder="Digite uma mensagem..."
+            class="solucao-input"
+        ></textarea>
+
+        <input
+            type="file"
+            name="arquivo"
+        >
+
+        <button class="btn-primary">
+            Enviar
+        </button>
+
+    </form>
+
+    <div class="mensagens">
+
+        {% for m in mensagens %}
+
+        <div class="mensagem">
+
+            <strong>
+                {{ m.usuario }}
+            </strong>
+
+            <p>
+                {{ m.mensagem }}
+            </p>
+
+            {% if m.arquivo %}
+
+            <a
+                href="/{{ m.arquivo }}"
+                target="_blank"
+                class="btn-warning pequeno"
+            >
+                Abrir Anexo
+            </a>
+
+            {% endif %}
+
+        </div>
+
+        {% endfor %}
+
+    </div>
+
+</div>
+
+
+<div class="acoes-detalhe">
+
+    <a
+        href="/assumir/{{ chamado.id }}"
+        class="btn-warning"
+    >
+        Assumir
+    </a>
+
+    <a
+        href="/finalizar/{{ chamado.id }}"
+        class="btn-success"
+    >
+        Finalizar
+    </a>
+
+    <a
+        href="/excluir/{{ chamado.id }}"
+        class="btn-danger"
+    >
+        Excluir
+    </a>
 
 </div>
 

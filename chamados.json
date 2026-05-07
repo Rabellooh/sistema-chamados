@@ -1,14 +1,17 @@
 [
     {
         "id": 1,
-        "usuario": "Jo\u00c3\u00a3o",
+        "usuario": "João",
         "maquina": "35",
         "descricao": "Teste para tec Gabriel",
         "status": "resolvido",
         "tecnico": "Gabriel",
         "tecnicos": [
             "Marcelo"
-        ]
+        ],
+        "categoria": "Software",
+        "setor": "Banda Larga",
+        "solucao": ""
     },
     {
         "id": 2,
@@ -17,8 +20,12 @@
         "descricao": "Teste 2",
         "status": "em_andamento",
         "tecnicos": [
-            "Gabriel"
-        ]
+            "Gabriel",
+            "Marcelo"
+        ],
+        "categoria": "Acesso",
+        "setor": "BackOffice",
+        "solucao": ""
     },
     {
         "id": 3,
@@ -28,7 +35,22 @@
         "descricao": "Travamento ",
         "status": "em_andamento",
         "tecnicos": [
-            "Gabriel"
-        ]
+            "Gabriel",
+            "Marcelo"
+        ],
+        "categoria": "Hardware"
+    },
+    {
+        "id": 4,
+        "usuario": "Paulo",
+        "setor": "Farmer",
+        "maquina": "l15",
+        "descricao": "asasasa",
+        "status": "em_andamento",
+        "tecnicos": [
+            "Gabriel",
+            "Gabriel Costa"
+        ],
+        "categoria": "Hardware"
     }
 ]

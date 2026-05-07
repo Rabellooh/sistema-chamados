@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h1 class="titulo">
+    Dashboard
+</h1>
+
+<div class="grid">
+
+    <div class="card stat">
+
+        <span>
+            Chamados Abertos
+        </span>
+
+        <h1 class="txt-aberto">
+            {{ abertos }}
+        </h1>
+
+    </div>
+
+    <div class="card stat">
+
+        <span>
+            Em Andamento
+        </span>
+
+        <h1 class="txt-andamento">
+            {{ andamento }}
+        </h1>
+
+    </div>
+
+    <div class="card stat">
+
+        <span>
+            Resolvidos
+        </span>
+
+        <h1 class="txt-resolvido">
+            {{ resolvidos }}
+        </h1>
+
+    </div>
+
+</div>
+
+<div class="card">
+
+    <h3 style="margin-bottom: 15px;">
+        Meus Chamados
+    </h3>
+
+    <table>
+
+        <tr>
+
+            <th>ID</th>
+            <th>Status</th>
+            <th>Técnicos</th>
+
+        </tr>
+
+        {% for c in chamados %}
+
+        {% if c.usuario == usuario.nome %}
+
+        <tr>
+
+            <td>
+                #{{ c.id }}
+            </td>
+
+            <td>
+
+                {% if c.status == "aberto" %}
+
+                <span class="badge aberto">
+                    Aberto
+                </span>
+
+                {% elif c.status == "em_andamento" %}
+
+                <span class="badge andamento">
+                    Em andamento
+                </span>
+
+                {% else %}
+
+                <span class="badge resolvido">
+                    Resolvido
+                </span>
+
+                {% endif %}
+
+            </td>
+
+            <td>
+
+                {% if c.tecnicos %}
+
+                {{ c.tecnicos | join(", ") }}
+
+                {% else %}
+
+                Não atribuído
+
+                {% endif %}
+
+            </td>
+
+        </tr>
+
+        {% endif %}
+
+        {% endfor %}
+
+    </table>
+
+</div>
+
+{% endblock %}
