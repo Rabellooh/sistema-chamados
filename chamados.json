@@ -1,56 +1,15 @@
 [
     {
         "id": 1,
-        "usuario": "João",
-        "maquina": "35",
-        "descricao": "Teste para tec Gabriel",
-        "status": "resolvido",
-        "tecnico": "Gabriel",
-        "tecnicos": [
-            "Marcelo"
-        ],
-        "categoria": "Software",
-        "setor": "Banda Larga",
-        "solucao": ""
-    },
-    {
-        "id": 2,
-        "usuario": "Paulo",
-        "maquina": "41",
-        "descricao": "Teste 2",
-        "status": "em_andamento",
-        "tecnicos": [
-            "Gabriel",
-            "Marcelo"
-        ],
-        "categoria": "Acesso",
-        "setor": "BackOffice",
-        "solucao": ""
-    },
-    {
-        "id": 3,
-        "usuario": "Paulo",
+        "usuario": "Sabrina",
+        "descricao": "Teste",
         "setor": "Hunter",
-        "maquina": "38 Lenovo",
-        "descricao": "Travamento ",
+        "maquina": "D19",
         "status": "em_andamento",
+        "categoria": "",
+        "solucao": "",
         "tecnicos": [
-            "Gabriel",
-            "Marcelo"
-        ],
-        "categoria": "Hardware"
-    },
-    {
-        "id": 4,
-        "usuario": "Paulo",
-        "setor": "Farmer",
-        "maquina": "l15",
-        "descricao": "asasasa",
-        "status": "em_andamento",
-        "tecnicos": [
-            "Gabriel",
-            "Gabriel Costa"
-        ],
-        "categoria": "Hardware"
+            "Gabriel"
+        ]
     }
 ]

@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h1 class="titulo">
+
+    Editar Posição
+
+</h1>
+
+<div class="card">
+
+    <form method="POST">
+
+        <label>
+
+            Posição
+
+        </label>
+
+        <input
+            type="text"
+            name="nova_posicao"
+            value="{{ posicao.posicao }}"
+        >
+
+        <br><br>
+
+        <label>
+
+            Máquina
+
+        </label>
+
+        <input
+            type="text"
+            name="maquina"
+            value="{{ posicao.maquina if posicao.maquina else '' }}"
+        >
+
+        <br><br>
+
+        <label>
+
+            Colaborador
+
+        </label>
+
+        <input
+            type="text"
+            name="colaborador"
+            value="{{ posicao.colaborador if posicao.colaborador else '' }}"
+        >
+
+        <br><br>
+
+        <button
+            type="submit"
+            class="btn-mini"
+        >
+
+            Salvar Alterações
+
+        </button>
+
+    </form>
+
+</div>
+
+{% endblock %}

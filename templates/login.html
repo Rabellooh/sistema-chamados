@@ -10,168 +10,94 @@
         content="width=device-width, initial-scale=1.0"
     >
 
-    <title>Login</title>
+    <title>
+        Login
+    </title>
 
-    <style>
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-
-            width: 100%;
-            height: 100vh;
-
-            display: flex;
-            justify-content: center;
-            align-items: center;
-
-            background:
-            linear-gradient(
-                135deg,
-                #020617,
-                #0f172a,
-                #111827
-            );
-
-            font-family:
-            Arial, Helvetica, sans-serif;
-        }
-
-        .login-card {
-
-            width: 400px;
-
-            background: #020617;
-
-            border:
-            1px solid #1e293b;
-
-            border-radius: 18px;
-
-            padding: 40px;
-
-            box-shadow:
-            0 0 30px rgba(0,0,0,0.4);
-        }
-
-        .login-top {
-
-            text-align: center;
-
-            margin-bottom: 30px;
-        }
-
-        .login-top h1 {
-
-            color: #38bdf8;
-
-            font-size: 36px;
-
-            margin-bottom: 10px;
-        }
-
-        .login-top p {
-
-            color: #94a3b8;
-        }
-
-        label {
-
-            color: white;
-
-            display: block;
-
-            margin-bottom: 10px;
-        }
-
-        select {
-
-            width: 100%;
-
-            padding: 14px;
-
-            border: none;
-
-            border-radius: 10px;
-
-            background: #1e293b;
-
-            color: white;
-
-            margin-bottom: 20px;
-        }
-
-        button {
-
-            width: 100%;
-
-            padding: 14px;
-
-            border: none;
-
-            border-radius: 10px;
-
-            background: #0ea5e9;
-
-            color: white;
-
-            font-size: 15px;
-
-            cursor: pointer;
-        }
-
-        button:hover {
-
-            background: #0284c7;
-        }
-
-    </style>
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='style.css') }}"
+    >
 
 </head>
 
-<body>
+<body class="login-body">
 
-<div class="login-card">
+    <div class="login-container">
 
-    <div class="login-top">
+        <div class="login-box">
 
-        <h1>Chamados TI</h1>
+            <h1>
+                Sistema Interno
+            </h1>
 
-        <p>
-            Sistema interno de suporte técnico
-        </p>
+            <p class="subtitulo">
+                Helpdesk & Inventário
+            </p>
+            {% if erro %}
 
-    </div>
+<div id="erro-login" class="erro-login">
 
-    <form method="POST">
-
-        <label>
-            Usuário
-        </label>
-
-        <select name="usuario_id">
-
-            {% for u in usuarios %}
-
-            <option value="{{ u.id }}">
-                {{ u.nome }} ({{ u.tipo }})
-            </option>
-
-            {% endfor %}
-
-        </select>
-
-        <button type="submit">
-            Entrar no sistema
-        </button>
-
-    </form>
+    {{ erro }}
 
 </div>
 
+{% endif %}
+
+            <form method="POST">
+
+                <div class="campo">
+
+                    <label>
+                        Usuário
+                    </label>
+
+                    <input
+                        type="text"
+                        name="nome"
+                        placeholder="Digite seu usuário"
+                        required
+                    >
+
+                </div>
+
+                <div class="campo">
+
+                    <label>
+                        Senha
+                    </label>
+
+                    <input
+                        type="password"
+                        name="senha"
+                        placeholder="Digite sua senha"
+                        required
+                    >
+
+                </div>
+
+                <button class="btn-login">
+                    Entrar
+                </button>
+
+            </form>
+            <div class="empresa-logo">
+
+            <img
+                src="{{ url_for('static', filename='img/logo_tc.png') }}"
+                alt="TC Telecom"
+            >
+
+            <span>
+                Sistema interno • TC Telecom
+            </span>
+
+</div>
+
+        </div>
+
+    </div>
+
 </body>
+
 </html>

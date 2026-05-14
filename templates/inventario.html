@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h1 class="titulo">
+    Inventário de Máquinas
+</h1>
+
+<div class="filtros-inventario">
+
+    <a
+        href="/pesquisar_ativos?termo=backoffice"
+        class="btn-setor"
+    >
+        Back Office
+    </a>
+
+    <a
+        href="/pesquisar_ativos?termo=hunter"
+        class="btn-setor"
+    >
+        Hunter
+    </a>
+
+    <a
+        href="/pesquisar_ativos?termo=bl"
+        class="btn-setor"
+    >
+        BL
+    </a>
+
+    <a
+        href="/pesquisar_ativos?termo=farmer"
+        class="btn-setor"
+    >
+        Farmer
+    </a>
+
+    <a
+        href="/pesquisar_ativos"
+        class="btn-primary"
+    >
+        Pesquisa Avançada
+    </a>
+
+</div>
+
+<div class="card">
+
+    <div style="
+        overflow-x:auto;
+    ">
+
+        <table class="tabela">
+
+            <thead>
+
+                <tr>
+
+                    <th>ID</th>
+
+                    <th>Marca</th>
+
+                    <th>Modelo</th>
+
+                    <th>Sistema</th>
+
+                    <th>RAM</th>
+
+                    <th>Armazenamento</th>
+
+                    <th>Usuário</th>
+
+                    <th>Setor</th>
+
+                </tr>
+
+            </thead>
+
+            <tbody>
+
+                {% for a in ativos %}
+
+                <tr>
+
+                    <td>{{ a.id_maquina }}</td>
+
+                    <td>{{ a.marca }}</td>
+
+                    <td>{{ a.modelo }}</td>
+
+                    <td>{{ a.sistema_operacional }}</td>
+
+                    <td>{{ a.memoria_ram }}</td>
+
+                    <td>{{ a.armazenamento }}</td>
+
+                    <td>{{ a.usuario_atual }}</td>
+
+                    <td>{{ a.setor }}</td>
+
+                </tr>
+
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</div>
+
+{% endblock %}

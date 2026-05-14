@@ -6,62 +6,210 @@
     Chamados
 </h1>
 
-<div class="lista-chamados">
+<div class="card">
 
-{% for c in chamados %}
+    <form
+        method="GET"
+        style="
+            display:flex;
+            gap:10px;
+            flex-wrap:wrap;
+            align-items:center;
+        "
+    >
 
-<a
-    href="/chamado/{{ c.id }}"
-    class="card chamado-card"
->
+        <input
+            type="text"
+            name="busca"
+            placeholder="Pesquisar chamado..."
+            value="{{ busca }}"
+        >
 
-    <div>
+        <button class="btn-primary">
+            Buscar
+        </button>
 
-        <h3>
+        {% if usuario.tipo == "colaborador" %}
 
-            #{{ c.id }}
-            —
-            {{ c.usuario }}
-
-        </h3>
-
-        <p>
-
-            {{ c.setor }}
-
-            •
-
-            {{ c.maquina }}
-
-        </p>
-
-    </div>
-
-    <div>
-
-        {% if c.status == "aberto" %}
-
-        <span class="badge aberto">
-            Aberto
-        </span>
-
-        {% elif c.status == "em_andamento" %}
-
-        <span class="badge andamento">
-            Em andamento
-        </span>
-
-        {% else %}
-
-        <span class="badge resolvido">
-            Resolvido
-        </span>
+        <a
+            href="/novo"
+            class="btn-success"
+        >
+            Abrir Chamado
+        </a>
 
         {% endif %}
 
+    </form>
+
+</div>
+
+<br>
+
+<div class="lista-chamados">
+
+{% for c in chamados|reverse %}
+
+<div class="card">
+
+    <div
+        style="
+            display:flex;
+            justify-content:space-between;
+            gap:20px;
+            flex-wrap:wrap;
+            align-items:center;
+        "
+    >
+
+        <div>
+
+            <h2>
+                Chamado #{{ c.id }}
+            </h2>
+
+            <br>
+
+            <p>
+
+                <b>Colaborador:</b>
+
+                {{ c.usuario }}
+
+            </p>
+
+            <p>
+
+                <b>Setor:</b>
+
+                {{ c.setor }}
+
+            </p>
+
+            <p>
+
+                <b>Máquina:</b>
+
+                {{ c.maquina }}
+
+            </p>
+
+            <p>
+
+                <b>Status:</b>
+
+                {% if c.status == "aberto" %}
+
+                    <span class="badge aberto">
+                        Aberto
+                    </span>
+
+                {% elif c.status == "em_andamento" %}
+
+                    <span class="badge andamento">
+                        Em andamento
+                    </span>
+
+                {% else %}
+
+                    <span class="badge resolvido">
+                        Resolvido
+                    </span>
+
+                {% endif %}
+
+            </p>
+
+            {% if usuario.tipo == "ti" %}
+
+            <p>
+
+                <b>Técnicos:</b>
+
+                {% if c.tecnicos %}
+
+                    {{ c.tecnicos | join(", ") }}
+
+                {% else %}
+
+                    Nenhum
+
+                {% endif %}
+
+            </p>
+
+            {% endif %}
+
+        </div>
+
+        <div
+            style="
+                display:flex;
+                gap:10px;
+                flex-wrap:wrap;
+                align-items:center;
+            "
+        >
+
+            <a
+                href="/chamado/{{ c.id }}"
+                class="btn-primary"
+            >
+                Verificar
+            </a>
+
+            {% if usuario.tipo == "ti" %}
+
+                {% if c.status == "aberto" %}
+
+                <a
+                    href="/assumir/{{ c.id }}"
+                    class="btn-warning"
+                >
+                    Assumir
+                </a>
+
+                {% endif %}
+
+                {% if c.status != "resolvido" %}
+
+                <a
+                    href="/finalizar/{{ c.id }}"
+                    class="btn-success"
+                >
+                    Finalizar
+                </a>
+
+                {% else %}
+
+                <a
+                    href="/reabrir/{{ c.id }}"
+                    class="btn-warning"
+                >
+                    Reabrir
+                </a>
+
+                {% endif %}
+
+                <a
+                    href="/excluir/{{ c.id }}"
+                    class="btn-danger"
+                    onclick="
+                        return confirm(
+                            'Deseja excluir este chamado?'
+                        )
+                    "
+                >
+                    Excluir
+                </a>
+
+            {% endif %}
+
+        </div>
+
     </div>
 
-</a>
+</div>
 
 {% endfor %}
 

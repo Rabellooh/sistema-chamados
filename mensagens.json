@@ -1,32 +1,14 @@
 [
     {
-        "chamado_id": 3,
-        "autor": "Gabriel",
-        "texto": "Ol\u00e1",
-        "arquivo": null
+        "chamado_id": 1,
+        "usuario": "Gabriel",
+        "mensagem": "Teste",
+        "arquivo": ""
     },
     {
-        "chamado_id": 3,
-        "autor": "Gabriel",
-        "texto": "Teste",
-        "arquivo": null
-    },
-    {
-        "chamado_id": 3,
-        "autor": "Paulo",
-        "texto": "Teste 12",
-        "arquivo": null
-    },
-    {
-        "chamado_id": 3,
-        "autor": "Marcelo",
-        "texto": "teste 3",
-        "arquivo": null
-    },
-    {
-        "chamado_id": 3,
-        "autor": "Gabriel",
-        "texto": "",
-        "arquivo": "chamado_3/teste.png"
+        "chamado_id": 1,
+        "usuario": "Sabrina",
+        "mensagem": "",
+        "arquivo": "uploads\\chat_1\\teste.png"
     }
 ]

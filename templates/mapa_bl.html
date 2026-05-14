@@ -1,0 +1,214 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h1 class="titulo">
+
+    Mapa Operacional - BL
+
+</h1>
+
+<!-- NOTEBOOKS -->
+
+<div class="notebooks-container">
+
+    {% for item in mapa_db %}
+
+        {% if "NOTEBOOK" in item.posicao %}
+
+        <div class="notebook-card">
+
+            <h3>
+
+                {{ item.posicao }}
+
+            </h3>
+
+            <div class="usuario-maquina">
+
+                {{ item.maquina if item.maquina else "VAGO" }}
+
+            </div>
+
+            {% if item.colaborador %}
+
+            <div class="usuario-maquina">
+
+                👤 {{ item.colaborador }}
+
+            </div>
+
+            {% endif %}
+
+            {% if usuario.tipo in ["ti", "administracao"] %}
+
+            <a
+                href="/editar_posicao/{{ item.posicao }}"
+                class="btn-mini"
+            >
+
+                Editar
+
+            </a>
+
+            {% endif %}
+
+        </div>
+
+        {% endif %}
+
+    {% endfor %}
+
+</div>
+
+<div class="mapa-grid">
+
+    <!-- ILHA 1016 -->
+
+    <div class="ilha">
+
+        <h2>
+
+            ILHA 1016
+
+        </h2>
+
+        {% for posicao, desktop in mapa.items() %}
+
+            {% if "1016" in posicao %}
+
+            <div class="baia">
+
+                <div class="desktop-id">
+
+                    {{ posicao }}
+
+                </div>
+
+                <div class="usuario-maquina">
+
+                    {{ desktop.maquina if desktop.maquina else "VAGO" }}
+
+                </div>
+
+                {% if desktop.colaborador %}
+
+                <div class="usuario-maquina">
+
+                    👤 {{ desktop.colaborador }}
+
+                </div>
+
+                {% endif %}
+
+                {% if usuario.tipo in ["ti", "administracao"] %}
+
+                <a
+                    href="/editar_posicao/{{ posicao }}"
+                    class="btn-mini"
+                >
+
+                    Editar
+
+                </a>
+
+                {% endif %}
+
+                {% for maquina in maquinas %}
+
+                    {% if maquina.id_maquina == desktop.maquina %}
+
+                    <div class="usuario-maquina">
+
+                        {{ maquina.modelo }}
+
+                    </div>
+
+                    {% endif %}
+
+                {% endfor %}
+
+            </div>
+
+            {% endif %}
+
+        {% endfor %}
+
+    </div>
+
+    <!-- ILHA 1015 -->
+
+    <div class="ilha">
+
+        <h2>
+
+            ILHA 1015
+
+        </h2>
+
+        {% for posicao, desktop in mapa.items() %}
+
+            {% if "1015" in posicao %}
+
+            <div class="baia">
+
+                <div class="desktop-id">
+
+                    {{ posicao }}
+
+                </div>
+
+                <div class="usuario-maquina">
+
+                    {{ desktop.maquina if desktop.maquina else "VAGO" }}
+
+                </div>
+
+                {% if desktop.colaborador %}
+
+                <div class="usuario-maquina">
+
+                    👤 {{ desktop.colaborador }}
+
+                </div>
+
+                {% endif %}
+
+                {% if usuario.tipo in ["ti", "administracao"] %}
+
+                <a
+                    href="/editar_posicao/{{ posicao }}"
+                    class="btn-mini"
+                >
+
+                    Editar
+
+                </a>
+
+                {% endif %}
+
+                {% for maquina in maquinas %}
+
+                    {% if maquina.id_maquina == desktop.maquina %}
+
+                    <div class="usuario-maquina">
+
+                        {{ maquina.modelo }}
+
+                    </div>
+
+                    {% endif %}
+
+                {% endfor %}
+
+            </div>
+
+            {% endif %}
+
+        {% endfor %}
+
+    </div>
+
+</div>
+
+{% endblock %}

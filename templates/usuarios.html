@@ -1,0 +1,382 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="usuarios-container">
+
+    <!-- TOPO -->
+
+    <div class="usuarios-topo">
+
+        <div>
+
+            <h1 class="titulo">
+                Usuários do Sistema
+            </h1>
+
+            <p class="subtitulo">
+                Gerenciamento de acessos e permissões
+            </p>
+
+        </div>
+
+        {% if usuario.tipo == "ti" %}
+
+        <div
+            style="
+                display:flex;
+                gap:10px;
+                flex-wrap:wrap;
+            "
+        >
+
+            <a
+                href="/novo_usuario"
+                class="btn-primary"
+            >
+                + Novo Usuário
+            </a>
+
+            <form
+    action="/importar_usuarios"
+    method="POST"
+    enctype="multipart/form-data"
+    style="
+        display:flex;
+        gap:10px;
+        align-items:center;
+        flex-wrap:wrap;
+    "
+>
+
+    <input
+        type="file"
+        name="arquivo"
+        accept=".xlsx,.xls"
+        required
+    >
+
+    <form
+    action="/importar_usuarios"
+    method="POST"
+    enctype="multipart/form-data"
+    style="display:flex; gap:10px;"
+>
+
+
+    <button
+        type="submit"
+        class="btn-success"
+    >
+        Importar Planilha
+    </button>
+
+</form>
+
+</form>
+
+        </div>
+
+        {% endif %}
+
+    </div>
+
+
+    <!-- ALERTAS -->
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+
+        {% if messages %}
+
+            {% for categoria, mensagem in messages %}
+
+                <div class="alerta {{ categoria }}">
+
+                    {{ mensagem }}
+
+                </div>
+
+            {% endfor %}
+
+        {% endif %}
+
+    {% endwith %}
+
+
+    <!-- BUSCA -->
+
+    <div class="card">
+
+        <form
+            method="GET"
+            action="/usuarios"
+            class="form-busca"
+        >
+
+            <input
+                type="text"
+                name="busca"
+                placeholder="Buscar por nome, matrícula, setor ou e-mail..."
+                value="{{ busca }}"
+            >
+
+            <button
+                type="submit"
+                class="btn-primary"
+            >
+                Buscar
+            </button>
+
+            {% if busca %}
+
+            <a
+                href="/usuarios"
+                class="btn-dark"
+            >
+                Limpar
+            </a>
+
+            {% endif %}
+
+        </form>
+
+    </div>
+
+
+    <!-- RESUMO -->
+
+    <div class="grid">
+
+        <div class="card stat">
+
+            <span>
+                Total de Usuários
+            </span>
+
+            <h1>
+                {{ usuarios|length }}
+            </h1>
+
+        </div>
+
+        <div class="card stat">
+
+            <span>
+                Usuários Ativos
+            </span>
+
+            <h1 class="txt-resolvido">
+
+                {{
+
+                    usuarios
+                    | selectattr("ativo")
+                    | list
+                    | length
+
+                }}
+
+            </h1>
+
+        </div>
+
+        <div class="card stat">
+
+            <span>
+                Usuários Inativos
+            </span>
+
+            <h1 class="txt-aberto">
+
+                {{
+
+                    usuarios
+                    | rejectattr("ativo")
+                    | list
+                    | length
+
+                }}
+
+            </h1>
+
+        </div>
+
+    </div>
+
+
+    <!-- TABELA -->
+
+    <div class="card tabela-container">
+
+        <table class="tabela-usuarios">
+
+            <thead>
+
+                <tr>
+
+                    <th>Matrícula</th>
+                    <th>Nome</th>
+                    <th>Tipo</th>
+                    <th>Setor</th>
+                    <th>E-mail</th>
+                    <th>Status</th>
+
+                    {% if usuario.tipo == "ti" %}
+                    <th width="220">
+                        Ações
+                    </th>
+                    {% endif %}
+
+                </tr>
+
+            </thead>
+
+            <tbody>
+
+                {% if usuarios %}
+
+                    {% for u in usuarios %}
+
+                    <tr>
+
+                        <td>
+
+                            <strong>
+                                #{{ u.id }}
+                            </strong>
+
+                        </td>
+
+                        <td>
+
+                            <div
+                                style="
+                                    display:flex;
+                                    flex-direction:column;
+                                    gap:4px;
+                                "
+                            >
+
+                                <strong>
+                                    {{ u.nome }}
+                                </strong>
+
+                            </div>
+
+                        </td>
+
+                        <td>
+
+                            {% if u.tipo == "ti" %}
+
+                                <span class="badge andamento">
+                                    TI
+                                </span>
+
+                            {% elif u.tipo == "administracao" %}
+
+                                <span class="badge aberto">
+                                    Administração
+                                </span>
+
+                            {% else %}
+
+                                <span class="badge resolvido">
+                                    Colaborador
+                                </span>
+
+                            {% endif %}
+
+                        </td>
+
+                        <td>
+                            {{ u.setor or "-" }}
+                        </td>
+
+                        <td>
+                            {{ u.email or "-" }}
+                        </td>
+
+                        <td>
+
+                            {% if u.ativo %}
+
+                            <span class="badge ativo">
+                                Ativo
+                            </span>
+
+                            {% else %}
+
+                            <span class="badge inativo">
+                                Inativo
+                            </span>
+
+                            {% endif %}
+
+                        </td>
+
+                        {% if usuario.tipo == "ti" %}
+
+                        <td>
+
+                            <div class="acoes-tabela">
+
+                                <a
+                                    href="/editar_usuario/{{ u.id }}"
+                                    class="btn-warning"
+                                >
+                                    Editar
+                                </a>
+
+                                <a
+                                    href="/excluir_usuario/{{ u.id }}"
+                                    class="btn-danger"
+                                    onclick="
+                                        return confirm(
+                                            'Deseja realmente excluir este usuário?'
+                                        )
+                                    "
+                                >
+                                    Excluir
+                                </a>
+
+                            </div>
+
+                        </td>
+
+                        {% endif %}
+
+                    </tr>
+
+                    {% endfor %}
+
+                {% else %}
+
+                <tr>
+
+                    <td
+                        colspan="7"
+                        style="
+                            text-align:center;
+                            padding:40px;
+                            color:#94a3b8;
+                        "
+                    >
+
+                        Nenhum usuário encontrado.
+
+                    </td>
+
+                </tr>
+
+                {% endif %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</div>
+
+{% endblock %}

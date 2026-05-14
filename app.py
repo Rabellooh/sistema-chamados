@@ -1,82 +1,111 @@
-from flask import Flask, render_template, request, redirect, session
-import json
+from flask import Flask, render_template, request, redirect, session, url_for, flash, send_file, send_from_directory
 import os
+import io
+import json
 from collections import Counter
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet
 from openpyxl import Workbook
-from flask import send_file
 from werkzeug.utils import secure_filename
+from flask_sqlalchemy import SQLAlchemy
+import pandas as pd
+from sqlalchemy import text
+from werkzeug.security import generate_password_hash, check_password_hash
+
 
 
 
 app = Flask(__name__)
-app.secret_key = "123"
 
+
+app.config["SECRET_KEY"] = os.getenv(
+    "SECRET_KEY",
+    "dev_secret_key"
+)
+
+# =========================
+# CONFIG POSTGRESQL
+# =========================
+
+app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL")
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+
+db = SQLAlchemy(app)
+app.secret_key = os.getenv("SECRET_KEY")
 UPLOAD_FOLDER = "uploads"
+
+app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
+@app.route("/uploads/<path:filename>")
+def uploaded_file(filename):
 
-# =========================
-# JSON
-# =========================
-
-def carregar_json(arquivo):
-
-    if not os.path.exists(arquivo):
-
-        return []
-
-    with open(arquivo, "r", encoding="utf-8") as f:
-
-        return json.load(f)
-
-
-def salvar_json(arquivo, dados):
-
-    with open(arquivo, "w", encoding="utf-8") as f:
-
-        json.dump(
-            dados,
-            f,
-            indent=4,
-            ensure_ascii=False
-        )
-
-
+    return send_from_directory(
+        app.config["UPLOAD_FOLDER"],
+        filename
+    )
 # =========================
 # LOGIN
 # =========================
 
-@app.route("/login", methods=["GET", "POST"])
+@app.route(
+    "/login",
+    methods=["GET", "POST"]
+)
 def login():
-
-    usuarios = carregar_json("usuarios.json")
 
     if request.method == "POST":
 
-        usuario_id = int(
-            request.form["usuario_id"]
-        )
+        nome = request.form.get("nome")
 
-        usuario = next(
-            (
-                u for u in usuarios
-                if u["id"] == usuario_id
-            ),
-            None
-        )
+        senha = request.form.get("senha")
 
-        session["usuario"] = usuario
+        resultado = db.session.execute(
 
-        return redirect("/")
+            db.text("""
+
+                SELECT *
+
+                FROM usuarios
+
+                WHERE nome = :nome
+                AND ativo = true
+
+            """),
+
+            {
+                "nome": nome
+            }
+
+        ).fetchone()
+
+        if resultado and resultado.senha == senha:
+
+            session["usuario"] = {
+
+                "id": resultado.id,
+
+                "nome": resultado.nome,
+
+                "tipo": resultado.tipo,
+
+                "setor": resultado.setor
+
+            }
+
+            return redirect("/")
+
+        erro = "Usuário ou senha inválidos"
 
     return render_template(
-        "login.html",
-        usuarios=usuarios
-    )
 
+        "login.html",
+
+        erro=erro if 'erro' in locals()
+        else None
+
+    )
 
 @app.route("/logout")
 def logout():
@@ -96,52 +125,48 @@ def dashboard():
     usuario = session.get("usuario")
 
     if not usuario:
-
         return redirect("/login")
 
-    chamados = carregar_json("chamados.json")
+    chamados = db.session.execute(text("""
 
-    abertos = len(
-        [
-            c for c in chamados
-            if c.get("status") == "aberto"
-        ]
-    )
+        SELECT *
+        FROM chamados
+        ORDER BY id DESC
 
-    andamento = len(
-        [
-            c for c in chamados
-            if c.get("status") == "em_andamento"
-        ]
-    )
+    """)).fetchall()
 
-    resolvidos = len(
-        [
-            c for c in chamados
-            if c.get("status") == "resolvido"
-        ]
-    )
+    abertos = len([
+        c for c in chamados
+        if c.status == "aberto"
+    ])
 
-    ranking_colaborador = Counter(
-        [
-            c.get("usuario", "Desconhecido")
-            for c in chamados
-        ]
-    )
+    andamento = len([
+        c for c in chamados
+        if c.status == "em_andamento"
+    ])
 
-    ranking_setor = Counter(
-        [
-            c.get("setor", "Não informado")
-            for c in chamados
-        ]
-    )
+    resolvidos = len([
+        c for c in chamados
+        if c.status == "resolvido"
+    ])
+
+    ranking_colaborador = Counter([
+        c.usuario or "Desconhecido"
+        for c in chamados
+    ])
+
+    ranking_setor = Counter([
+        c.setor or "Não informado"
+        for c in chamados
+    ])
 
     problemas = Counter()
 
     for c in chamados:
 
-        categoria = c.get(
-            "categoria",
+        categoria = (
+            c.categoria
+            or
             "Não categorizado"
         )
 
@@ -150,177 +175,321 @@ def dashboard():
     if usuario["tipo"] == "ti":
 
         return render_template(
+
             "dashboard_ti.html",
+
             usuario=usuario,
+
             chamados=chamados,
+
             abertos=abertos,
+
             andamento=andamento,
+
             resolvidos=resolvidos,
+
             ranking_colaborador=ranking_colaborador,
+
             ranking_setor=ranking_setor,
+
             setores_json=json.dumps(
                 dict(ranking_setor)
             ),
+
             problemas_json=json.dumps(
                 dict(problemas)
             )
+
         )
 
     return render_template(
+
         "dashboard_colab.html",
+
         usuario=usuario,
+
         chamados=chamados,
+
         abertos=abertos,
+
         andamento=andamento,
+
         resolvidos=resolvidos
+
     )
-
-
 # =========================
 # LISTA CHAMADOS
 # =========================
-
 @app.route("/chamados")
 def chamados():
 
     usuario = session.get("usuario")
 
     if not usuario:
-
         return redirect("/login")
 
-    chamados = carregar_json("chamados.json")
+    busca = request.args.get(
+        "busca",
+        ""
+    ).lower()
+
+    if usuario["tipo"] == "ti":
+
+        query = """
+
+            SELECT *
+
+            FROM chamados
+
+            ORDER BY id DESC
+
+        """
+
+        lista = db.session.execute(
+            db.text(query)
+        ).fetchall()
+
+    else:
+
+        query = """
+
+            SELECT *
+
+            FROM chamados
+
+            WHERE usuario = :usuario
+
+            ORDER BY id DESC
+
+        """
+
+        lista = db.session.execute(
+
+            db.text(query),
+
+            {
+                "usuario": usuario["nome"]
+            }
+
+        ).fetchall()
+
+    if busca:
+
+        lista = [
+
+            c for c in lista
+
+            if
+
+            busca in str(c.id).lower()
+
+            or
+
+            busca in str(c.descricao).lower()
+
+            or
+
+            busca in str(c.usuario).lower()
+
+            or
+
+            busca in str(c.maquina).lower()
+
+        ]
 
     return render_template(
-        "chamados.html",
-        usuario=usuario,
-        chamados=chamados
-    )
 
+        "chamados.html",
+
+        chamados=lista,
+
+        usuario=usuario,
+
+        busca=busca
+
+    )
 
 # =========================
 # DETALHE
 # =========================
 
-@app.route("/chamado/<int:chamado_id>")
-def detalhe_chamado(chamado_id):
+@app.route("/chamado/<int:id>")
+def detalhe_chamado(id):
 
     usuario = session.get("usuario")
 
     if not usuario:
-
         return redirect("/login")
 
-    chamados = carregar_json("chamados.json")
+    chamado = db.session.execute(
 
-    mensagens = carregar_json("mensagens.json")
+        db.text("""
 
-    chamado = next(
-        (
-            c for c in chamados
-            if c["id"] == chamado_id
-        ),
-        None
-    )
+            SELECT *
 
-    mensagens_chamado = [
-        m for m in mensagens
-        if m["chamado_id"] == chamado_id
+            FROM chamados
+
+            WHERE id = :id
+
+        """),
+
+        {
+            "id": id
+        }
+
+    ).fetchone()
+
+    if not chamado:
+        return redirect("/chamados")
+
+    if (
+
+        usuario["tipo"] != "ti"
+
+        and
+
+        chamado.usuario != usuario["nome"]
+
+    ):
+
+        return redirect("/chamados")
+
+    mensagens = db.session.execute(
+
+        db.text("""
+
+            SELECT *
+
+            FROM mensagens
+
+            WHERE chamado_id = :id
+
+            ORDER BY id ASC
+
+        """),
+
+        {
+            "id": id
+        }
+
+    ).fetchall()
+
+    tecnicos_db = db.session.execute(
+
+        db.text("""
+
+            SELECT tecnico
+
+            FROM chamados_tecnicos
+
+            WHERE chamado_id = :id
+
+        """),
+
+        {
+            "id": id
+        }
+
+    ).fetchall()
+
+    tecnicos = [
+
+        t.tecnico
+
+        for t in tecnicos_db
+
     ]
 
     return render_template(
+
         "detalhe.html",
-        usuario=usuario,
+
         chamado=chamado,
-        mensagens=mensagens_chamado
+
+        mensagens=mensagens,
+
+        tecnicos=tecnicos,
+
+        usuario=usuario
+
     )
-
-
 # =========================
 # NOVO CHAMADO
 # =========================
 
-@app.route("/novo", methods=["GET", "POST"])
+@app.route(
+    "/novo",
+    methods=["GET", "POST"]
+)
 def novo_chamado():
 
     usuario = session.get("usuario")
 
     if not usuario:
-
         return redirect("/login")
 
-    if usuario["tipo"] != "colaborador":
-
+    if usuario["tipo"] not in [
+        "colaborador",
+        "administracao",
+    ]:
         return redirect("/")
-
-    chamados = carregar_json("chamados.json")
 
     if request.method == "POST":
 
-        novo_id = 1
+        db.session.execute(
 
-        if chamados:
+            db.text("""
 
-            novo_id = chamados[-1]["id"] + 1
+                INSERT INTO chamados (
 
-        arquivo_nome = ""
+                    usuario,
+                    descricao,
+                    setor,
+                    maquina,
+                    status,
+                    categoria,
+                    solucao
 
-        arquivo = request.files.get("arquivo")
+                )
 
-        if arquivo and arquivo.filename != "":
+                VALUES (
 
-            pasta = os.path.join(
-                UPLOAD_FOLDER,
-                f"chamado_{novo_id}"
-            )
+                    :usuario,
+                    :descricao,
+                    :setor,
+                    :maquina,
+                    'aberto',
+                    '',
+                    ''
 
-            os.makedirs(
-                pasta,
-                exist_ok=True
-            )
+                )
 
-            nome_seguro = secure_filename(
-                arquivo.filename
-            )
+            """),
 
-            caminho = os.path.join(
-                pasta,
-                nome_seguro
-            )
+            {
 
-            arquivo.save(caminho)
+                "usuario": usuario["nome"],
 
-            arquivo_nome = caminho
+                "descricao": request.form.get(
+                    "descricao",
+                    ""
+                ),
 
-        chamado = {
+                "setor": request.form.get(
+                    "setor",
+                    ""
+                ),
 
-            "id": novo_id,
+                "maquina": request.form.get(
+                    "maquina",
+                    ""
+                )
 
-            "usuario": usuario["nome"],
+            }
 
-            "setor": request.form["setor"],
-
-            "maquina": request.form["maquina"],
-
-            "descricao": request.form["descricao"],
-
-            "status": "aberto",
-
-            "categoria": "Não categorizado",
-
-            "solucao": "",
-
-            "tecnicos": [],
-
-            "arquivo": arquivo_nome
-        }
-
-        chamados.append(chamado)
-
-        salvar_json(
-            "chamados.json",
-            chamados
         )
+
+        db.session.commit()
 
         return redirect("/chamados")
 
@@ -328,8 +497,6 @@ def novo_chamado():
         "novo.html",
         usuario=usuario
     )
-
-
 # =========================
 # CHAT
 # =========================
@@ -342,9 +509,13 @@ def enviar_mensagem(chamado_id):
 
     usuario = session.get("usuario")
 
-    mensagens = carregar_json("mensagens.json")
+    if not usuario:
+        return redirect("/login")
 
-    texto = request.form["mensagem"]
+    texto = request.form.get(
+        "mensagem",
+        ""
+    )
 
     arquivo_nome = ""
 
@@ -373,30 +544,53 @@ def enviar_mensagem(chamado_id):
 
         arquivo.save(caminho)
 
-        arquivo_nome = caminho
+        arquivo_nome = (
+            f"chat_{chamado_id}/{nome_seguro}"
+        )
 
-    mensagem = {
+    db.session.execute(
 
-        "chamado_id": chamado_id,
+        db.text("""
 
-        "usuario": usuario["nome"],
+            INSERT INTO mensagens (
 
-        "mensagem": texto,
+                chamado_id,
+                usuario,
+                mensagem,
+                arquivo
 
-        "arquivo": arquivo_nome
-    }
+            )
 
-    mensagens.append(mensagem)
+            VALUES (
 
-    salvar_json(
-        "mensagens.json",
-        mensagens
+                :chamado_id,
+                :usuario,
+                :mensagem,
+                :arquivo
+
+            )
+
+        """),
+
+        {
+
+            "chamado_id": chamado_id,
+
+            "usuario": usuario["nome"],
+
+            "mensagem": texto,
+
+            "arquivo": arquivo_nome
+
+        }
+
     )
+
+    db.session.commit()
 
     return redirect(
         f"/chamado/{chamado_id}"
     )
-
 
 # =========================
 # CATEGORIA
@@ -408,24 +602,46 @@ def enviar_mensagem(chamado_id):
 )
 def categoria_chamado(chamado_id):
 
-    chamados = carregar_json("chamados.json")
+    usuario = session.get("usuario")
 
-    for c in chamados:
+    if not usuario:
+        return redirect("/login")
 
-        if c["id"] == chamado_id:
+    if usuario["tipo"] != "ti":
+        return redirect("/")
 
-            c["categoria"] = request.form["categoria"]
-
-    salvar_json(
-        "chamados.json",
-        chamados
+    categoria = request.form.get(
+        "categoria",
+        ""
     )
+
+    db.session.execute(
+
+        db.text("""
+
+            UPDATE chamados
+
+            SET categoria = :categoria
+
+            WHERE id = :id
+
+        """),
+
+        {
+
+            "categoria": categoria,
+
+            "id": chamado_id
+
+        }
+
+    )
+
+    db.session.commit()
 
     return redirect(
         f"/chamado/{chamado_id}"
     )
-
-
 # =========================
 # SOLUÇÃO
 # =========================
@@ -436,24 +652,46 @@ def categoria_chamado(chamado_id):
 )
 def adicionar_solucao(chamado_id):
 
-    chamados = carregar_json("chamados.json")
+    usuario = session.get("usuario")
 
-    for c in chamados:
+    if not usuario:
+        return redirect("/login")
 
-        if c["id"] == chamado_id:
+    if usuario["tipo"] != "ti":
+        return redirect("/")
 
-            c["solucao"] = request.form["solucao"]
-
-    salvar_json(
-        "chamados.json",
-        chamados
+    solucao = request.form.get(
+        "solucao",
+        ""
     )
+
+    db.session.execute(
+
+        db.text("""
+
+            UPDATE chamados
+
+            SET solucao = :solucao
+
+            WHERE id = :id
+
+        """),
+
+        {
+
+            "solucao": solucao,
+
+            "id": chamado_id
+
+        }
+
+    )
+
+    db.session.commit()
 
     return redirect(
         f"/chamado/{chamado_id}"
     )
-
-
 # =========================
 # ASSUMIR
 # =========================
@@ -463,54 +701,115 @@ def assumir_chamado(chamado_id):
 
     usuario = session.get("usuario")
 
-    chamados = carregar_json("chamados.json")
+    if not usuario:
+        return redirect("/login")
 
-    for c in chamados:
+    existe = db.session.execute(
 
-        if c["id"] == chamado_id:
+        db.text("""
 
-            if usuario["nome"] not in c["tecnicos"]:
+            SELECT *
 
-                c["tecnicos"].append(
-                    usuario["nome"]
+            FROM chamados_tecnicos
+
+            WHERE chamado_id = :id
+            AND tecnico = :tecnico
+
+        """),
+
+        {
+            "id": chamado_id,
+            "tecnico": usuario["nome"]
+        }
+
+    ).fetchone()
+
+    if not existe:
+
+        db.session.execute(
+
+            db.text("""
+
+                INSERT INTO chamados_tecnicos (
+
+                    chamado_id,
+                    tecnico
+
                 )
 
-            c["status"] = "em_andamento"
+                VALUES (
 
-    salvar_json(
-        "chamados.json",
-        chamados
+                    :id,
+                    :tecnico
+
+                )
+
+            """),
+
+            {
+                "id": chamado_id,
+                "tecnico": usuario["nome"]
+            }
+
+        )
+
+    db.session.execute(
+
+        db.text("""
+
+            UPDATE chamados
+
+            SET status = 'em_andamento'
+
+            WHERE id = :id
+
+        """),
+
+        {
+            "id": chamado_id
+        }
+
     )
 
-    return redirect(
-        f"/chamado/{chamado_id}"
-    )
+    db.session.commit()
 
-
+    return redirect(f"/chamado/{chamado_id}")
 # =========================
-# FINALIZAR
+# FINALIZAR CHAMADO
 # =========================
 
-@app.route("/finalizar/<int:chamado_id>")
-def finalizar_chamado(chamado_id):
+@app.route("/finalizar/<int:id>")
+def finalizar(id):
 
-    chamados = carregar_json("chamados.json")
+    usuario = session.get("usuario")
 
-    for c in chamados:
+    if not usuario:
+        return redirect("/login")
 
-        if c["id"] == chamado_id:
+    if usuario["tipo"] != "ti":
+        return redirect("/")
 
-            c["status"] = "resolvido"
+    db.session.execute(
 
-    salvar_json(
-        "chamados.json",
-        chamados
+        db.text("""
+
+            UPDATE chamados
+
+            SET status = 'resolvido'
+
+            WHERE id = :id
+
+        """),
+
+        {
+            "id": id
+        }
+
     )
 
-    return redirect(
-        f"/chamado/{chamado_id}"
-    )
+    db.session.commit()
 
+    return redirect("/chamados")
 
 # =========================
 # EXCLUIR
@@ -522,27 +821,31 @@ def finalizar_chamado(chamado_id):
 )
 def excluir_chamado(chamado_id):
 
-    chamados = carregar_json("chamados.json")
+    chamado = db.session.execute(text("""
 
-    chamado = next(
-        (
-            c for c in chamados
-            if c["id"] == chamado_id
-        ),
-        None
-    )
+        SELECT *
+        FROM chamados
+        WHERE id = :id
+
+    """), {
+        "id": chamado_id
+    }).fetchone()
+
+    if not chamado:
+        return redirect("/chamados")
 
     if request.method == "POST":
 
-        chamados = [
-            c for c in chamados
-            if c["id"] != chamado_id
-        ]
+        db.session.execute(text("""
 
-        salvar_json(
-            "chamados.json",
-            chamados
-        )
+            DELETE FROM chamados
+            WHERE id = :id
+
+        """), {
+            "id": chamado_id
+        })
+
+        db.session.commit()
 
         return redirect("/chamados")
 
@@ -565,10 +868,6 @@ def historico():
     if usuario["tipo"] != "ti":
         return redirect("/")
 
-    chamados = carregar_json(
-        "chamados.json"
-    )
-
     busca = request.args.get(
         "busca",
         ""
@@ -582,38 +881,57 @@ def historico():
 
     if busca:
 
-        resultados = [
+        resultados = db.session.execute(
 
-            c for c in chamados
+            text("""
 
-            if
+                SELECT *
 
-            busca in c.get(
-                "maquina",
-                ""
-            ).lower()
+                FROM chamados
 
-            or
+                WHERE
 
-            busca in c.get(
-                "usuario",
-                ""
-            ).lower()
+                    LOWER(maquina) LIKE :busca
 
-        ]
+                    OR
+
+                    LOWER(usuario) LIKE :busca
+
+                ORDER BY id DESC
+
+            """),
+
+            {
+                "busca": f"%{busca}%"
+            }
+
+        ).fetchall()
 
         for c in resultados:
 
-            maquinas.add(
-                c.get("maquina", "")
-            )
+            maquinas.add(c.maquina)
 
-            for t in c.get(
-                "tecnicos",
-                []
-            ):
+            tecnicos_db = db.session.execute(
 
-                tecnicos.add(t)
+                text("""
+
+                    SELECT tecnico
+
+                    FROM chamados_tecnicos
+
+                    WHERE chamado_id = :id
+
+                """),
+
+                {
+                    "id": c.id
+                }
+
+            ).fetchall()
+
+            for t in tecnicos_db:
+
+                tecnicos.add(t.tecnico)
 
     return render_template(
 
@@ -628,9 +946,8 @@ def historico():
         tecnicos=tecnicos,
 
         maquinas=maquinas
+
     )
-
-
 # =========================
 # EXPORTAR PDF
 # =========================
@@ -643,9 +960,19 @@ def exportar_pdf():
     if not usuario:
         return redirect("/login")
 
-    chamados = carregar_json(
-        "chamados.json"
-    )
+    chamados = db.session.execute(
+
+        text("""
+
+            SELECT *
+
+            FROM chamados
+
+            ORDER BY id DESC
+
+        """)
+
+    ).fetchall()
 
     tecnico = request.args.get(
         "tecnico"
@@ -653,16 +980,41 @@ def exportar_pdf():
 
     if tecnico:
 
-        chamados = [
+        chamados_filtrados = []
 
-            c for c in chamados
+        for c in chamados:
 
-            if tecnico in c.get(
-                "tecnicos",
-                []
-            )
+            tecnicos_db = db.session.execute(
 
-        ]
+                text("""
+
+                    SELECT tecnico
+
+                    FROM chamados_tecnicos
+
+                    WHERE chamado_id = :id
+
+                """),
+
+                {
+                    "id": c.id
+                }
+
+            ).fetchall()
+
+            tecnicos = [
+
+                t.tecnico
+
+                for t in tecnicos_db
+
+            ]
+
+            if tecnico in tecnicos:
+
+                chamados_filtrados.append(c)
+
+        chamados = chamados_filtrados
 
     arquivo = "relatorio_chamados.pdf"
 
@@ -683,6 +1035,7 @@ def exportar_pdf():
             styles["Title"]
 
         )
+
     )
 
     elementos.append(
@@ -691,23 +1044,49 @@ def exportar_pdf():
 
     for c in chamados:
 
+        tecnicos_db = db.session.execute(
+
+            text("""
+
+                SELECT tecnico
+
+                FROM chamados_tecnicos
+
+                WHERE chamado_id = :id
+
+            """),
+
+            {
+                "id": c.id
+            }
+
+        ).fetchall()
+
+        tecnicos = [
+
+            t.tecnico
+
+            for t in tecnicos_db
+
+        ]
+
         texto = f"""
 
-        <b>ID:</b> {c.get('id')}<br/>
+        <b>ID:</b> {c.id}<br/>
 
-        <b>Colaborador:</b> {c.get('usuario')}<br/>
+        <b>Colaborador:</b> {c.usuario}<br/>
 
-        <b>Setor:</b> {c.get('setor')}<br/>
+        <b>Setor:</b> {c.setor}<br/>
 
-        <b>Máquina:</b> {c.get('maquina')}<br/>
+        <b>Máquina:</b> {c.maquina}<br/>
 
-        <b>Status:</b> {c.get('status')}<br/>
+        <b>Status:</b> {c.status}<br/>
 
-        <b>Categoria:</b> {c.get('categoria')}<br/>
+        <b>Categoria:</b> {c.categoria}<br/>
 
-        <b>Técnicos:</b> {', '.join(c.get('tecnicos', []))}<br/>
+        <b>Técnicos:</b> {', '.join(tecnicos)}<br/>
 
-        <b>Solução:</b> {c.get('solucao', '')}<br/><br/>
+        <b>Solução:</b> {c.solucao or ''}<br/><br/>
 
         """
 
@@ -720,6 +1099,7 @@ def exportar_pdf():
                 styles["BodyText"]
 
             )
+
         )
 
         elementos.append(
@@ -732,8 +1112,6 @@ def exportar_pdf():
         arquivo,
         as_attachment=True
     )
-
-
 # =========================
 # EXPORTAR XLSX
 # =========================
@@ -746,9 +1124,19 @@ def exportar_xlsx():
     if not usuario:
         return redirect("/login")
 
-    chamados = carregar_json(
-        "chamados.json"
-    )
+    chamados = db.session.execute(
+
+        text("""
+
+            SELECT *
+
+            FROM chamados
+
+            ORDER BY id DESC
+
+        """)
+
+    ).fetchall()
 
     tecnico = request.args.get(
         "tecnico"
@@ -756,16 +1144,41 @@ def exportar_xlsx():
 
     if tecnico:
 
-        chamados = [
+        chamados_filtrados = []
 
-            c for c in chamados
+        for c in chamados:
 
-            if tecnico in c.get(
-                "tecnicos",
-                []
-            )
+            tecnicos_db = db.session.execute(
 
-        ]
+                text("""
+
+                    SELECT tecnico
+
+                    FROM chamados_tecnicos
+
+                    WHERE chamado_id = :id
+
+                """),
+
+                {
+                    "id": c.id
+                }
+
+            ).fetchall()
+
+            tecnicos = [
+
+                t.tecnico
+
+                for t in tecnicos_db
+
+            ]
+
+            if tecnico in tecnicos:
+
+                chamados_filtrados.append(c)
+
+        chamados = chamados_filtrados
 
     wb = Workbook()
 
@@ -790,24 +1203,42 @@ def exportar_xlsx():
 
     for c in chamados:
 
+        tecnicos_db = db.session.execute(
+
+            text("""
+
+                SELECT tecnico
+
+                FROM chamados_tecnicos
+
+                WHERE chamado_id = :id
+
+            """),
+
+            {
+                "id": c.id
+            }
+
+        ).fetchall()
+
+        tecnicos = [
+
+            t.tecnico
+
+            for t in tecnicos_db
+
+        ]
+
         ws.append([
 
-            c.get("id"),
-            c.get("usuario"),
-            c.get("setor"),
-            c.get("maquina"),
-            c.get("status"),
-            c.get("categoria"),
-            ", ".join(
-                c.get(
-                    "tecnicos",
-                    []
-                )
-            ),
-            c.get(
-                "solucao",
-                ""
-            )
+            c.id,
+            c.usuario,
+            c.setor,
+            c.maquina,
+            c.status,
+            c.categoria,
+            ", ".join(tecnicos),
+            c.solucao or ""
 
         ])
 
@@ -819,7 +1250,6 @@ def exportar_xlsx():
         arquivo,
         as_attachment=True
     )
-
 # =========================
 # EDITAR CHAMADO (TI)
 # =========================
@@ -835,49 +1265,1342 @@ def editar_chamado(id):
     if usuario["tipo"] != "ti":
         return redirect("/")
 
-    chamados = carregar_json(
-        "chamados.json"
-    )
+    db.session.execute(text("""
 
-    for c in chamados:
+        UPDATE chamados
 
-        if c["id"] == id:
+        SET
 
-            c["setor"] = request.form.get(
-                "setor",
-                c.get("setor", "")
-            )
+            setor = :setor,
+            maquina = :maquina,
+            categoria = :categoria,
+            solucao = :solucao
 
-            c["maquina"] = request.form.get(
-                "maquina",
-                c.get("maquina", "")
-            )
+        WHERE id = :id
 
-            c["categoria"] = request.form.get(
-                "categoria",
-                c.get("categoria", "")
-            )
+    """), {
 
-            c["solucao"] = request.form.get(
-                "solucao",
-                c.get("solucao", "")
-            )
+        "setor": request.form.get("setor"),
+        "maquina": request.form.get("maquina"),
+        "categoria": request.form.get("categoria"),
+        "solucao": request.form.get("solucao"),
+        "id": id
 
-            salvar_json(
-                "chamados.json",
-                chamados
-            )
+    })
 
-            break
+    db.session.commit()
 
     return redirect(
         f"/chamado/{id}"
     )
+# =========================
+# REABRIR CHAMADO
+# =========================
 
+@app.route("/reabrir/<int:id>")
+def reabrir(id):
+
+    usuario = session.get("usuario")
+
+    if not usuario:
+        return redirect("/login")
+
+    if usuario["tipo"] != "ti":
+        return redirect("/")
+
+    db.session.execute(
+
+        db.text("""
+
+            UPDATE chamados
+
+            SET status = 'em_andamento'
+
+            WHERE id = :id
+
+        """),
+
+        {
+            "id": id
+        }
+
+    )
+
+    db.session.commit()
+
+    return redirect("/chamados")
 # =========================
 # EXECUTAR
 # =========================
+# =========================
+# INVENTÁRIO
+# =========================
 
+@app.route("/inventario")
+def inventario():
+
+    usuario = session.get("usuario")
+
+    if not usuario:
+        return redirect("/login")
+
+    if usuario["tipo"] not in [
+        "ti",
+        "administracao"
+    ]:
+        return redirect("/")
+
+    ativos = db.session.execute(
+
+        db.text("""
+
+            SELECT *
+
+            FROM ativos
+
+            ORDER BY id DESC
+
+        """)
+
+    ).fetchall()
+
+    return render_template(
+
+        "inventario.html",
+
+        ativos=ativos,
+
+        usuario=usuario
+    )
+# =========================
+# USUÁRIOS
+# =========================
+
+@app.route("/usuarios")
+def usuarios():
+
+    usuario = session.get("usuario")
+
+    if not usuario:
+        return redirect("/login")
+
+    if usuario["tipo"] not in [
+        "ti",
+        "administracao"
+    ]:
+        return redirect("/")
+
+    busca = request.args.get(
+        "busca",
+        ""
+    ).strip()
+
+    if busca:
+
+        usuarios_db = db.session.execute(
+
+            db.text("""
+
+                SELECT *
+
+                FROM usuarios
+
+                WHERE
+
+                    CAST(id AS TEXT)
+                    LIKE :busca
+
+                    OR
+
+                    LOWER(nome)
+                    LIKE LOWER(:busca)
+
+                ORDER BY id ASC
+
+            """),
+
+            {
+                "busca": f"%{busca}%"
+            }
+
+        ).fetchall()
+
+    else:
+
+        usuarios_db = db.session.execute(
+
+            db.text("""
+
+                SELECT *
+
+                FROM usuarios
+
+                ORDER BY id ASC
+
+            """)
+
+        ).fetchall()
+
+    return render_template(
+
+        "usuarios.html",
+
+        usuarios=usuarios_db,
+
+        usuario=usuario,
+
+        busca=busca
+
+    )
+# =========================
+# NOVO USUÁRIO
+# =========================
+
+@app.route(
+    "/novo_usuario",
+    methods=["GET", "POST"]
+)
+def novo_usuario():
+
+    usuario = session.get("usuario")
+
+    if not usuario:
+        return redirect("/login")
+
+    if usuario["tipo"] != "ti":
+        return redirect("/")
+
+    if request.method == "POST":
+
+        dados = {
+
+            "id": request.form.get("id"),
+
+            "nome": request.form.get("nome"),
+
+            "senha": generate_password_hash(
+                request.form.get("senha")
+            ),
+
+            "tipo": request.form.get("tipo"),
+
+            "setor": request.form.get("setor"),
+
+            "email": request.form.get("email"),
+
+            "ativo": True
+
+        }
+
+        existe = db.session.execute(
+
+            db.text("""
+
+                SELECT id
+
+                FROM usuarios
+
+                WHERE id = :id
+
+                OR nome = :nome
+
+            """),
+
+            {
+                "id": dados["id"],
+                "nome": dados["nome"]
+            }
+
+        ).fetchone()
+
+        if existe:
+
+            flash(
+                "Usuário já existe.",
+                "danger"
+            )
+
+            return redirect("/novo_usuario")
+
+        db.session.execute(
+
+            db.text("""
+
+                INSERT INTO usuarios (
+
+                    id,
+                    nome,
+                    senha,
+                    tipo,
+                    setor,
+                    email,
+                    ativo
+
+                )
+
+                VALUES (
+
+                    :id,
+                    :nome,
+                    :senha,
+                    :tipo,
+                    :setor,
+                    :email,
+                    :ativo
+
+                )
+
+            """),
+
+            dados
+
+        )
+
+        db.session.commit()
+
+        flash(
+            "Usuário criado com sucesso!",
+            "success"
+        )
+
+        return redirect("/usuarios")
+
+    return render_template(
+        "novo_usuario.html",
+        usuario=usuario
+    )
+
+# =========================
+# IMPORTAR USUÁRIOS XLSX
+# =========================
+
+@app.route(
+    "/importar_usuarios",
+    methods=["POST"]
+)
+def importar_usuarios():
+
+    usuario = session.get("usuario")
+
+    if not usuario:
+        return redirect("/login")
+
+    if usuario["tipo"] != "ti":
+        return redirect("/")
+
+    arquivo = request.files.get("arquivo")
+
+    if not arquivo:
+
+        flash(
+            "Nenhum arquivo enviado.",
+            "error"
+        )
+
+        return redirect("/usuarios")
+
+    try:
+
+        df = pd.read_excel(arquivo)
+
+        for _, linha in df.iterrows():
+
+            existe = db.session.execute(
+
+                db.text("""
+
+                    SELECT id
+
+                    FROM usuarios
+
+                    WHERE id = :id
+
+                """),
+
+                {
+                    "id": int(linha["id"])
+                }
+
+            ).fetchone()
+
+            if existe:
+                continue
+
+            senha_hash = generate_password_hash(
+                str(linha["senha"])
+            )
+
+            db.session.execute(
+
+                db.text("""
+
+                    INSERT INTO usuarios (
+
+                        id,
+                        nome,
+                        senha,
+                        tipo,
+                        setor,
+                        email,
+                        ativo
+
+                    )
+
+                    VALUES (
+
+                        :id,
+                        :nome,
+                        :senha,
+                        :tipo,
+                        :setor,
+                        :email,
+                        true
+
+                    )
+
+                """),
+
+                {
+
+                    "id": int(linha["id"]),
+
+                    "nome": str(linha["nome"]),
+
+                    "senha": senha_hash,
+
+                    "tipo": str(linha["tipo"]),
+
+                    "setor": str(linha["setor"]),
+
+                    "email": str(linha["email"])
+
+                }
+
+            )
+
+        db.session.commit()
+
+        flash(
+            "Usuários importados com sucesso!",
+            "success"
+        )
+
+    except Exception as e:
+
+        flash(
+            f"Erro ao importar planilha: {e}",
+            "error"
+        )
+
+    return redirect("/usuarios")
+# =========================
+# EDITAR USUÁRIO
+# =========================
+
+@app.route(
+    "/editar_usuario/<int:id>",
+    methods=["GET", "POST"]
+)
+def editar_usuario(id):
+
+    usuario = session.get("usuario")
+
+    if not usuario:
+        return redirect("/login")
+
+    if usuario["tipo"] != "ti":
+        return redirect("/")
+
+    usuario_db = db.session.execute(
+
+        db.text("""
+
+            SELECT *
+
+            FROM usuarios
+
+            WHERE id = :id
+
+        """),
+
+        {
+            "id": id
+        }
+
+    ).fetchone()
+
+    if not usuario_db:
+        return redirect("/usuarios")
+
+    if request.method == "POST":
+
+        db.session.execute(
+
+            db.text("""
+
+                UPDATE usuarios
+
+                SET
+
+                    nome = :nome,
+                    senha = :senha,
+                    tipo = :tipo,
+                    setor = :setor,
+                    email = :email,
+                    ativo = :ativo
+
+                WHERE id = :id
+
+            """),
+
+            {
+
+                "id": id,
+
+                "nome": request.form.get("nome"),
+
+                "senha": generate_password_hash(
+                    request.form.get("senha")
+                ),
+
+                "tipo": request.form.get("tipo"),
+
+                "setor": request.form.get("setor"),
+
+                "email": request.form.get("email"),
+
+                "ativo":
+                True if request.form.get("ativo")
+                == "true"
+                else False
+
+            }
+
+        )
+
+        db.session.commit()
+
+        flash(
+            "Usuário atualizado com sucesso!",
+            "success"
+        )
+
+        return redirect("/usuarios")
+
+    return render_template(
+
+        "editar_usuario.html",
+
+        usuario_db=usuario_db,
+
+        usuario=usuario
+    )
+# =========================
+# DESATIVAR USUÁRIO
+# =========================
+
+@app.route("/desativar_usuario/<int:id>")
+def desativar_usuario(id):
+
+    usuario = session.get("usuario")
+
+    if not usuario:
+        return redirect("/login")
+
+    if usuario["tipo"] != "ti":
+        return redirect("/")
+
+    db.session.execute(
+
+        db.text("""
+
+            UPDATE usuarios
+
+            SET ativo = false
+
+            WHERE id = :id
+
+        """),
+
+        {
+            "id": id
+        }
+
+    )
+
+    db.session.commit()
+
+    flash(
+        "Usuário desativado.",
+        "warning"
+    )
+
+    return redirect("/usuarios")
+# =========================
+# IMPORTAR INVENTÁRIOS
+# =========================
+
+@app.route("/importar_inventario")
+def importar_inventario():
+
+    usuario = session.get("usuario")
+
+    if not usuario:
+        return redirect("/login")
+
+    if usuario["tipo"] not in [
+        "ti",
+        "administracao"
+    ]:
+        return redirect("/")
+
+    pasta = "Planilhas"
+
+    arquivos = [
+
+        arq
+
+        for arq in os.listdir(pasta)
+
+        if arq.endswith(".xlsx")
+
+    ]
+
+    total_importados = 0
+
+    for arquivo in arquivos:
+
+        caminho = os.path.join(
+            pasta,
+            arquivo
+        )
+
+        df = pd.read_excel(caminho)
+
+        df.columns = [
+
+            str(col).strip().upper()
+
+            for col in df.columns
+
+        ]
+
+        for _, row in df.iterrows():
+
+            id_maquina = str(
+                row["ID"]
+            )
+
+            existe = db.session.execute(
+
+                db.text("""
+
+                    SELECT id
+
+                    FROM ativos
+
+                    WHERE id_maquina = :id_maquina
+
+                """),
+
+                {
+                    "id_maquina": id_maquina
+                }
+
+            ).fetchone()
+
+            dados = {
+
+                "id_maquina": id_maquina,
+
+                "marca": str(
+                    row["MARCA"]
+                ),
+
+                "modelo": str(
+                    row["MODELO"]
+                ),
+
+                "sistema_operacional": str(
+                    row["SISTEMA OPERACIONAL"]
+                ),
+
+                "memoria_ram": str(
+                    row["MEMORIA RAM"]
+                ),
+
+                "armazenamento": str(
+                    row["ARMAZENAMENTO"]
+                ),
+
+                "usuario_atual": str(
+                    row["USUARIO"]
+                ),
+
+                "setor": str(
+                    row["SETOR"]
+                )
+
+            }
+
+            if existe:
+
+                db.session.execute(
+
+                    db.text("""
+
+                        UPDATE ativos
+
+                        SET
+
+                            marca = :marca,
+
+                            modelo = :modelo,
+
+                            sistema_operacional =
+                            :sistema_operacional,
+
+                            memoria_ram =
+                            :memoria_ram,
+
+                            armazenamento =
+                            :armazenamento,
+
+                            usuario_atual =
+                            :usuario_atual,
+
+                            setor = :setor
+
+                        WHERE id_maquina =
+                        :id_maquina
+
+                    """),
+
+                    dados
+
+                )
+
+            else:
+
+                db.session.execute(
+
+                    db.text("""
+
+                        INSERT INTO ativos (
+
+                            id_maquina,
+                            marca,
+                            modelo,
+                            sistema_operacional,
+                            memoria_ram,
+                            armazenamento,
+                            usuario_atual,
+                            setor
+
+                        )
+
+                        VALUES (
+
+                            :id_maquina,
+                            :marca,
+                            :modelo,
+                            :sistema_operacional,
+                            :memoria_ram,
+                            :armazenamento,
+                            :usuario_atual,
+                            :setor
+
+                        )
+
+                    """),
+
+                    dados
+
+                )
+
+            total_importados += 1
+
+    db.session.commit()
+
+    return f"""
+
+    Inventários importados com sucesso!
+
+    Total de registros processados:
+    {total_importados}
+
+    """
+
+# =========================
+# PESQUISA INVENTÁRIO
+# =========================
+
+@app.route(
+    "/pesquisar_ativos",
+    methods=["GET"]
+)
+def pesquisar_ativos():
+
+    usuario = session.get("usuario")
+
+    if not usuario:
+        return redirect("/login")
+
+    if usuario["tipo"] not in [
+        "ti",
+        "administracao"
+    ]:
+        return redirect("/")
+
+    termo = request.args.get(
+        "termo",
+        ""
+    )
+
+    ativos = []
+
+    if termo:
+
+        ativos = db.session.execute(
+
+            db.text("""
+
+                SELECT *
+
+                FROM ativos
+
+                WHERE
+
+                    LOWER(id_maquina)
+                    LIKE LOWER(:termo)
+
+                OR
+
+                    LOWER(usuario_atual)
+                    LIKE LOWER(:termo)
+
+                OR
+
+                    LOWER(setor)
+                    LIKE LOWER(:termo)
+
+                ORDER BY id DESC
+
+            """),
+
+            {
+                "termo": f"%{termo}%"
+            }
+
+        ).fetchall()
+
+    return render_template(
+
+        "pesquisa_ativos.html",
+
+        ativos=ativos,
+
+        termo=termo,
+
+        usuario=usuario
+    )
+# =========================
+# EDITAR POSIÇÃO
+# =========================
+
+@app.route(
+    "/editar_posicao/<posicao>",
+    methods=["GET", "POST"]
+)
+def editar_posicao(posicao):
+
+    usuario = session.get("usuario")
+
+    if not usuario:
+
+        return redirect("/login")
+
+    if usuario["tipo"] not in [
+        "ti",
+        "administracao"
+    ]:
+
+        return redirect("/")
+
+    if request.method == "POST":
+
+        nova_maquina = request.form.get(
+            "maquina"
+        )
+
+        colaborador = request.form.get(
+            "colaborador"
+        )
+
+        nova_posicao = request.form.get(
+            "nova_posicao"
+        )
+
+        db.session.execute(
+
+            db.text("""
+
+                UPDATE mapa_posicoes
+
+                SET
+
+                    maquina = :maquina,
+
+                    colaborador = :colaborador,
+
+                    posicao = :nova_posicao
+
+                WHERE posicao = :posicao
+
+            """),
+
+            {
+                "maquina": nova_maquina,
+                "colaborador": colaborador,
+                "nova_posicao": nova_posicao,
+                "posicao": posicao
+            }
+
+        )
+
+        db.session.commit()
+
+        flash(
+            "Posição atualizada com sucesso!",
+            "success"
+        )
+
+        sala_db = db.session.execute(
+
+            db.text("""
+
+                SELECT sala
+
+                FROM mapa_posicoes
+
+                WHERE posicao = :nova_posicao
+
+            """),
+
+            {
+                "nova_posicao": nova_posicao
+            }
+
+        ).fetchone()
+
+        if sala_db:
+
+            if sala_db.sala == "BL":
+
+                return redirect("/mapa_bl")
+
+            return redirect("/mapa_hunter")
+
+        return redirect("/")
+
+    posicao_db = db.session.execute(
+
+        db.text("""
+
+            SELECT *
+
+            FROM mapa_posicoes
+
+            WHERE posicao = :posicao
+
+        """),
+
+        {
+            "posicao": posicao
+        }
+
+    ).fetchone()
+
+    return render_template(
+
+        "editar_posicao.html",
+
+        posicao=posicao_db
+
+    )
+# =========================
+# EDITAR ATIVO
+# =========================
+
+@app.route(
+    "/editar_ativo/<int:id>",
+    methods=["GET", "POST"]
+)
+def editar_ativo(id):
+
+    usuario = session.get("usuario")
+
+    if not usuario:
+        return redirect("/login")
+
+    if usuario["tipo"] not in [
+        "ti",
+        "administracao"
+    ]:
+        return redirect("/")
+
+    ativo = db.session.execute(
+
+        db.text("""
+
+            SELECT *
+
+            FROM ativos
+
+            WHERE id = :id
+
+        """),
+
+        {
+            "id": id
+        }
+
+    ).fetchone()
+
+    if request.method == "POST":
+
+        dados = {
+
+            "id": id,
+
+            "marca": request.form.get("marca"),
+
+            "modelo": request.form.get("modelo"),
+
+            "sistema_operacional":
+            request.form.get(
+                "sistema_operacional"
+            ),
+
+            "memoria_ram":
+            request.form.get(
+                "memoria_ram"
+            ),
+
+            "armazenamento":
+            request.form.get(
+                "armazenamento"
+            ),
+
+            "usuario_atual":
+            request.form.get(
+                "usuario_atual"
+            ),
+
+            "setor":
+            request.form.get(
+                "setor"
+            )
+
+        }
+
+        db.session.execute(
+
+            db.text("""
+
+                UPDATE ativos
+
+                SET
+
+                    marca = :marca,
+
+                    modelo = :modelo,
+
+                    sistema_operacional =
+                    :sistema_operacional,
+
+                    memoria_ram =
+                    :memoria_ram,
+
+                    armazenamento =
+                    :armazenamento,
+
+                    usuario_atual =
+                    :usuario_atual,
+
+                    setor = :setor
+
+                WHERE id = :id
+
+            """),
+
+            dados
+
+        )
+
+        db.session.commit()
+
+        return redirect(
+            "/pesquisar_ativos"
+        )
+
+    return render_template(
+
+        "editar_ativo.html",
+
+        ativo=ativo,
+
+        usuario=usuario
+    )
+
+# =========================
+# MAPA HUNTER
+# =========================
+
+@app.route("/mapa_hunter")
+def mapa_hunter():
+
+    usuario = session.get("usuario")
+
+    if not usuario:
+        return redirect("/login")
+
+    if usuario["tipo"] not in [
+        "ti",
+        "administracao"
+    ]:
+        return redirect("/")
+
+    maquinas = db.session.execute(
+
+        db.text("""
+
+            SELECT
+                id,
+                id_maquina,
+                usuario_atual,
+                marca,
+                modelo,
+                setor
+
+            FROM ativos
+
+            WHERE LOWER(setor)
+            LIKE LOWER('%hunter%')
+
+        """)
+
+    ).fetchall()
+
+    chamados_abertos = db.session.execute(
+
+        db.text("""
+
+            SELECT DISTINCT maquina
+
+            FROM chamados
+
+            WHERE status != 'resolvido'
+
+        """)
+
+    ).fetchall()
+
+    maquinas_com_chamado = [
+
+        c.maquina
+
+        for c in chamados_abertos
+
+        if c.maquina
+
+    ]
+
+    mapa_db = db.session.execute(
+
+        db.text("""
+
+            SELECT
+                posicao,
+                maquina,
+                colaborador,
+                sala
+
+            FROM mapa_posicoes
+
+            WHERE sala = 'Hunter'
+
+            ORDER BY posicao
+
+        """)
+
+    ).fetchall()
+
+    mapa = {
+
+        item.posicao: {
+            "maquina": item.maquina,
+            "colaborador": item.colaborador
+        }
+
+        for item in mapa_db
+
+    }
+
+    return render_template(
+
+        "mapa_hunter.html",
+
+        usuario=usuario,
+
+        maquinas=maquinas,
+
+        mapa=mapa,
+
+        mapa_db=mapa_db,
+
+        maquinas_com_chamado=
+        maquinas_com_chamado
+
+    )
+
+# =========================
+# MAPA BL
+# =========================
+
+@app.route("/mapa_bl")
+def mapa_bl():
+
+    usuario = session.get("usuario")
+
+    if not usuario:
+        return redirect("/login")
+
+    if usuario["tipo"] not in [
+        "ti",
+        "administracao"
+    ]:
+        return redirect("/")
+
+    maquinas = db.session.execute(
+
+        db.text("""
+
+            SELECT
+                id,
+                id_maquina,
+                usuario_atual,
+                marca,
+                modelo,
+                setor
+
+            FROM ativos
+
+            WHERE LOWER(setor)
+            LIKE LOWER('%bl%')
+
+        """)
+
+    ).fetchall()
+
+    chamados_abertos = db.session.execute(
+
+        db.text("""
+
+            SELECT DISTINCT maquina
+
+            FROM chamados
+
+            WHERE status != 'Finalizado'
+
+        """)
+
+    ).fetchall()
+
+    maquinas_com_chamado = [
+
+        c.maquina
+
+        for c in chamados_abertos
+
+        if c.maquina
+
+    ]
+
+    mapa_db = db.session.execute(
+
+        db.text("""
+
+            SELECT
+                posicao,
+                maquina,
+                colaborador,
+                sala
+
+            FROM mapa_posicoes
+
+            WHERE sala = 'BL'
+
+            ORDER BY posicao
+
+        """)
+
+    ).fetchall()
+
+    mapa = {
+
+        item.posicao: {
+            "maquina": item.maquina,
+            "colaborador": item.colaborador
+        }
+
+        for item in mapa_db
+
+    }
+
+    return render_template(
+
+        "mapa_bl.html",
+
+        usuario=usuario,
+
+        maquinas=maquinas,
+
+        mapa=mapa,
+
+        mapa_db=mapa_db,
+
+        maquinas_com_chamado=
+        maquinas_com_chamado
+
+    )
+# =========================
+# TESTE BANCO
+# =========================
+
+@app.route("/teste_bd")
+def teste_bd():
+
+    try:
+
+        db.session.execute(
+        db.text("SELECT 1")
+    )
+
+        return "Banco conectado com sucesso!"
+
+    except Exception as e:
+
+        return f"Erro: {e}"
+@app.route("/debug-db")
+def debug_db():
+    result = db.session.execute(
+        db.text("SELECT COUNT(*) FROM usuarios")
+    ).fetchone()
+    return f"Usuarios: {result[0]}"
 if __name__ == "__main__":
-
-    app.run(debug=True)
+    app.run(
+        host="0.0.0.0",
+        port=5000,
+        debug=True
+    )

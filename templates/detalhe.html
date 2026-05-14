@@ -163,6 +163,7 @@
 
     </p>
 
+    {% if session.usuario.tipo == "ti" %}
     <h3>Categoria</h3>
 
     <form
@@ -202,13 +203,14 @@
         </button>
 
     </form>
+    {% endif %}
 
     {% if chamado.arquivo %}
 
     <h3>Arquivo Inicial</h3>
 
     <a
-        href="/{{ chamado.arquivo }}"
+        href="/uploads/{{ chamado.arquivo }}"
         target="_blank"
         class="btn-warning"
     >
@@ -268,7 +270,7 @@
             {% if m.arquivo %}
 
             <a
-                href="/{{ m.arquivo }}"
+                href="/uploads/{{ m.arquivo }}"
                 target="_blank"
                 class="btn-warning pequeno"
             >
@@ -310,5 +312,4 @@
     </a>
 
 </div>
-
 {% endblock %}

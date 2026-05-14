@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html lang="pt-br">
 
 <head>
@@ -21,102 +22,115 @@
 
 </head>
 
-<body id="body">
+<body>
 
-{% if session.usuario %}
+    <div class="layout">
 
-<div class="topbar">
+        <!-- SIDEBAR -->
 
-    <h2>
-        Sistema de Chamados TI
-    </h2>
+        <aside class="sidebar">
 
-    <div class="topbar-actions">
+            <div class="logo">
 
-        <span>
-            {{ session.usuario.nome }}
-        </span>
+                <h2>
+                    HelpDesk
+                </h2>
 
-        <a href="/">
-            Dashboard
-        </a>
+            </div>
 
-        <a href="/chamados">
-            Chamados
-        </a>
+            <nav class="menu">
 
-        {% if session.usuario.tipo == "colaborador" %}
+                <a href="/">
+                    Dashboard
+                </a>
 
-        <a href="/novo">
-            Abrir Chamado
-        </a>
+                <a href="/chamados">
+                    Chamados
+                </a>
 
-        {% endif %}
+                {% if usuario.tipo in ["ti", "administracao"] %}
 
-        <button
-            onclick="toggleDarkMode()"
-            class="btn-dark"
-        >
-            🌙
-        </button>
+                <a href="/inventario">
+                    Inventário
+                </a>
 
-        <a href="/logout">
-            Sair
-        </a>
+                {% endif %}
+
+                {% if usuario.tipo == "ti" %}
+
+                <a href="/usuarios">
+                    Usuários
+                </a>
+
+                <a href="/historico">
+                    Histórico
+                </a>
+
+                {% endif %}
+
+                <a href="/logout" class="menu-sair">
+                    Sair
+                </a>
+
+            </nav>
+
+        </aside>
+
+        <!-- CONTEÚDO -->
+
+        <main class="conteudo">
+
+            <!-- TOPO -->
+
+            <header class="topbar">
+
+                <div>
+
+                    <h3>
+                        Sistema de Chamados
+                    </h3>
+
+                    <span>
+                        {{ usuario.nome }}
+                    </span>
+
+                </div>
+
+            </header>
+
+            <!-- FLASH -->
+
+            {% with messages =
+            get_flashed_messages(with_categories=true) %}
+
+                {% if messages %}
+
+                    {% for categoria, mensagem in messages %}
+
+                        <div class="alert {{ categoria }}">
+
+                            {{ mensagem }}
+
+                        </div>
+
+                    {% endfor %}
+
+                {% endif %}
+
+            {% endwith %}
+
+            <!-- CONTEÚDO -->
+
+            <section class="pagina">
+
+                {% block content %}
+                {% endblock %}
+
+            </section>
+
+        </main>
 
     </div>
-
-</div>
-
-{% endif %}
-
-<div class="container">
-
-    {% block content %}
-    {% endblock %}
-
-</div>
-
-<script>
-
-function toggleDarkMode() {
-
-    const body = document.getElementById("body");
-
-    body.classList.toggle("dark-mode");
-
-    if (
-        body.classList.contains("dark-mode")
-    ) {
-
-        localStorage.setItem(
-            "darkmode",
-            "on"
-        );
-
-    } else {
-
-        localStorage.setItem(
-            "darkmode",
-            "off"
-        );
-    }
-}
-
-window.onload = () => {
-
-    const darkmode =
-        localStorage.getItem("darkmode");
-
-    if (darkmode === "on") {
-
-        document
-            .getElementById("body")
-            .classList.add("dark-mode");
-    }
-};
-
-</script>
 
 </body>
 
