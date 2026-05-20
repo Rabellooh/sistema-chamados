@@ -2,9 +2,60 @@
 
 {% block content %}
 
+<div class="pagina">
+
 <h1 class="titulo">
     Mapa Operacional - Hunter
 </h1>
+<div class="resumo-operacional">
+
+    <div class="card-resumo">
+
+        <span>Desktops</span>
+        <h2>{{ total_desktops }}</h2>
+
+    </div>
+
+    <div class="card-resumo">
+
+        <span>Notebooks</span>
+        <h2>{{ total_notebooks }}</h2>
+
+    </div>
+
+    <div class="card-resumo">
+
+        <span>Chamados Abertos</span>
+        <h2>{{ total_chamados }}</h2>
+
+    </div>
+
+</div>
+
+<div class="acoes-mapa">
+
+    <a
+        href="/nova_posicao"
+        class="btn-primary"
+    >
+        + Nova Posição
+    </a>
+
+    <a
+        href="/movimentar_maquina"
+        class="btn-warning"
+    >
+        Movimentar Equipamento
+    </a>
+
+    <a
+        href="/historico_mapa"
+        class="btn-dark"
+    >
+        Histórico
+    </a>
+
+</div>
 
 <!-- NOTEBOOKS -->
 
@@ -16,40 +67,81 @@
 
         <div class="notebook-card">
 
-            <h3>
+            <div class="topo-baia">
 
-                {{ item.posicao }}
+                <h3>
+                    {{ item.posicao }}
+                </h3>
 
-            </h3>
+                {% if item.maquina in maquinas_com_chamado %}
+
+                <span class="badge aberto">
+                    CHAMADO
+                </span>
+
+                {% else %}
+
+                <span class="badge resolvido">
+                    OK
+                </span>
+
+                {% endif %}
+
+            </div>
 
             <div class="usuario-maquina">
 
-                {{ item.maquina if item.maquina else "VAGO" }}
+                {% if item.maquina %}
+
+                <a
+                    href="/historico_maquina/{{ item.maquina }}"
+                    class="link-maquina"
+                >
+                    {{ item.maquina }}
+                </a>
+
+                {% else %}
+
+                VAGO
+
+                {% endif %}
 
             </div>
 
             {% if item.colaborador %}
 
             <div class="usuario-maquina">
-
                 👤 {{ item.colaborador }}
-
             </div>
 
             {% endif %}
 
-            {% if usuario.tipo in ["ti", "administracao"] %}
+            {% for maquina in maquinas %}
+
+                {% if maquina.id_maquina == item.maquina %}
+
+                <div class="info-extra-mapa">
+
+                    <span>
+                        {{ maquina.modelo }}
+                    </span>
+
+                    <span>
+                        {{ maquina.usuario_atual }}
+                    </span>
+
+                </div>
+
+                {% endif %}
+
+            {% endfor %}
 
             <a
-                href="/editar_posicao/{{ item.posicao }}"
+                href="{{ url_for('editar_posicao', posicao=item.posicao) }}"
                 class="btn-mini"
             >
-
                 Editar
-
             </a>
-
-            {% endif %}
 
         </div>
 
@@ -59,15 +151,15 @@
 
 </div>
 
-<!-- MAPA -->
-
 <div class="mapa-grid">
 
-    <!-- ILHA 1 ESQ -->
+    <!-- ILHA 1 ESQUERDA -->
 
     <div class="ilha">
 
-        <h2>ILHA 1 (ESQ)</h2>
+        <h2>
+            ILHA 1 (ESQ)
+        </h2>
 
         {% for posicao, desktop in mapa.items() %}
 
@@ -80,36 +172,7 @@
                 'PC 11'
             ] %}
 
-            <div class="baia">
-
-                <div class="desktop-id">
-                    {{ posicao }}
-                </div>
-
-                <div class="usuario-maquina">
-                    {{ desktop.maquina if desktop.maquina else "VAGO" }}
-                </div>
-
-                {% if desktop.colaborador %}
-
-                <div class="usuario-maquina">
-                    👤 {{ desktop.colaborador }}
-                </div>
-
-                {% endif %}
-
-                {% if usuario.tipo in ["ti", "administracao"] %}
-
-                <a
-                    href="/editar_posicao/{{ posicao }}"
-                    class="btn-mini"
-                >
-                    Editar
-                </a>
-
-                {% endif %}
-
-            </div>
+            {% include 'partials/baia.html' %}
 
             {% endif %}
 
@@ -117,11 +180,13 @@
 
     </div>
 
-    <!-- ILHA 1 DIR -->
+    <!-- ILHA 1 DIREITA -->
 
     <div class="ilha">
 
-        <h2>ILHA 1 (DIR)</h2>
+        <h2>
+            ILHA 1 (DIR)
+        </h2>
 
         {% for posicao, desktop in mapa.items() %}
 
@@ -134,36 +199,7 @@
                 'PC 12'
             ] %}
 
-            <div class="baia">
-
-                <div class="desktop-id">
-                    {{ posicao }}
-                </div>
-
-                <div class="usuario-maquina">
-                    {{ desktop.maquina if desktop.maquina else "VAGO" }}
-                </div>
-
-                {% if desktop.colaborador %}
-
-                <div class="usuario-maquina">
-                    👤 {{ desktop.colaborador }}
-                </div>
-
-                {% endif %}
-
-                {% if usuario.tipo in ["ti", "administracao"] %}
-
-                <a
-                    href="/editar_posicao/{{ posicao }}"
-                    class="btn-mini"
-                >
-                    Editar
-                </a>
-
-                {% endif %}
-
-            </div>
+            {% include 'partials/baia.html' %}
 
             {% endif %}
 
@@ -171,11 +207,13 @@
 
     </div>
 
-    <!-- ILHA 2 ESQ -->
+    <!-- ILHA 2 ESQUERDA -->
 
     <div class="ilha">
 
-        <h2>ILHA 2 (ESQ)</h2>
+        <h2>
+            ILHA 2 (ESQ)
+        </h2>
 
         {% for posicao, desktop in mapa.items() %}
 
@@ -188,36 +226,7 @@
                 'PC 23'
             ] %}
 
-            <div class="baia">
-
-                <div class="desktop-id">
-                    {{ posicao }}
-                </div>
-
-                <div class="usuario-maquina">
-                    {{ desktop.maquina if desktop.maquina else "VAGO" }}
-                </div>
-
-                {% if desktop.colaborador %}
-
-                <div class="usuario-maquina">
-                    👤 {{ desktop.colaborador }}
-                </div>
-
-                {% endif %}
-
-                {% if usuario.tipo in ["ti", "administracao"] %}
-
-                <a
-                    href="/editar_posicao/{{ posicao }}"
-                    class="btn-mini"
-                >
-                    Editar
-                </a>
-
-                {% endif %}
-
-            </div>
+            {% include 'partials/baia.html' %}
 
             {% endif %}
 
@@ -225,11 +234,13 @@
 
     </div>
 
-    <!-- ILHA 2 DIR -->
+    <!-- ILHA 2 DIREITA -->
 
     <div class="ilha">
 
-        <h2>ILHA 2 (DIR)</h2>
+        <h2>
+            ILHA 2 (DIR)
+        </h2>
 
         {% for posicao, desktop in mapa.items() %}
 
@@ -242,42 +253,15 @@
                 'PC 24'
             ] %}
 
-            <div class="baia">
-
-                <div class="desktop-id">
-                    {{ posicao }}
-                </div>
-
-                <div class="usuario-maquina">
-                    {{ desktop.maquina if desktop.maquina else "VAGO" }}
-                </div>
-
-                {% if desktop.colaborador %}
-
-                <div class="usuario-maquina">
-                    👤 {{ desktop.colaborador }}
-                </div>
-
-                {% endif %}
-
-                {% if usuario.tipo in ["ti", "administracao"] %}
-
-                <a
-                    href="/editar_posicao/{{ posicao }}"
-                    class="btn-mini"
-                >
-                    Editar
-                </a>
-
-                {% endif %}
-
-            </div>
+            {% include 'partials/baia.html' %}
 
             {% endif %}
 
         {% endfor %}
 
     </div>
+
+</div>
 
 </div>
 

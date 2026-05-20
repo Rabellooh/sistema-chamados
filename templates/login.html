@@ -11,7 +11,7 @@
     >
 
     <title>
-        Login
+        Login • Sistema Interno
     </title>
 
     <link
@@ -23,26 +23,39 @@
 
 <body class="login-body">
 
+    <div class="login-background"></div>
+
     <div class="login-container">
 
         <div class="login-box">
 
-            <h1>
-                Sistema Interno
-            </h1>
+            <div class="login-topo">
 
-            <p class="subtitulo">
-                Helpdesk & Inventário
-            </p>
+                <img
+                    src="{{ url_for('static', filename='img/logo.png') }}"
+                    class="logo-tc"
+                    alt="TC Telecom"
+                >
+
+                <h1>
+                    Sistema Interno
+                </h1>
+
+                <p class="subtitulo-login">
+                    Helpdesk & Inventário
+                </p>
+
+            </div>
+
             {% if erro %}
 
-<div id="erro-login" class="erro-login">
+            <div id="erro-login" class="erro-login">
 
-    {{ erro }}
+                {{ erro }}
 
-</div>
+            </div>
 
-{% endif %}
+            {% endif %}
 
             <form method="POST">
 
@@ -81,18 +94,14 @@
                 </button>
 
             </form>
-            <div class="empresa-logo">
 
-            <img
-                src="{{ url_for('static', filename='img/logo_tc.png') }}"
-                alt="TC Telecom"
-            >
+            <div class="login-footer">
 
-            <span>
-                Sistema interno • TC Telecom
-            </span>
+                <span>
+                    Sistema interno • TC Telecom
+                </span>
 
-</div>
+            </div>
 
         </div>
 

@@ -327,6 +327,17 @@
                                 >
                                     Editar
                                 </a>
+                                <a
+                                    href="/resetar_senha/{{ u.id }}"
+                                    class="btn-dark"
+                                    onclick="
+                                        return confirm(
+                                            'Resetar senha deste usuário para 123456?'
+                                        )
+                                    "
+                                >
+                                    Resetar Senha
+                                </a>
 
                                 <a
                                     href="/excluir_usuario/{{ u.id }}"

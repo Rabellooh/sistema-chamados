@@ -1,7 +1,8 @@
 from flask import Flask, render_template, request, redirect, session, url_for, flash, send_file, send_from_directory
+from flask_mail import Mail, Message
 import os
-import io
 import json
+import urllib.parse
 from collections import Counter
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet
@@ -17,11 +18,45 @@ from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
 
-
 app.config["SECRET_KEY"] = os.getenv(
     "SECRET_KEY",
     "dev_secret_key"
 )
+app.config["MAIL_SERVER"] = os.getenv("MAIL_SERVER")
+app.config["MAIL_PORT"] = int(os.getenv("MAIL_PORT"))
+app.config["MAIL_USE_TLS"] = os.getenv("MAIL_USE_TLS").lower() == "true"
+app.config["MAIL_USERNAME"] = os.getenv("MAIL_USERNAME")
+app.config["MAIL_PASSWORD"] = os.getenv("MAIL_PASSWORD")
+app.config["MAIL_DEFAULT_SENDER"] = os.getenv("MAIL_DEFAULT_SENDER")
+
+mail = Mail(app)
+
+# =========================
+# ENVIO EMAIL
+# =========================
+def enviar_email(destinatario, assunto, html):
+
+    try:
+
+        msg = Message(
+            subject=assunto,
+            recipients=[destinatario]
+        )
+
+        msg.html = html
+
+        mail.send(msg)
+
+        print(f"Email enviado para {destinatario}")
+
+        return True
+
+    except Exception as e:
+
+        print("ERRO AO ENVIAR EMAIL:")
+        print(e)
+
+        return False
 
 # =========================
 # CONFIG POSTGRESQL
@@ -80,7 +115,7 @@ def login():
 
         ).fetchone()
 
-        if resultado and resultado.senha == senha:
+        if resultado and check_password_hash(resultado.senha, senha):
 
             session["usuario"] = {
 
@@ -93,6 +128,8 @@ def login():
                 "setor": resultado.setor
 
             }
+            if resultado.precisa_trocar_senha:
+                return redirect("/trocar_senha")
 
             return redirect("/")
 
@@ -113,6 +150,82 @@ def logout():
     session.clear()
 
     return redirect("/login")
+
+# =========================
+# TROCAR SENHA
+# =========================
+
+@app.route(
+    "/trocar_senha",
+    methods=["GET", "POST"]
+)
+def trocar_senha():
+
+    usuario = session.get("usuario")
+
+    if not usuario:
+
+        return redirect("/login")
+
+    if request.method == "POST":
+
+        nova_senha = request.form.get(
+            "nova_senha"
+        )
+
+        confirmar_senha = request.form.get(
+            "confirmar_senha"
+        )
+
+        if nova_senha != confirmar_senha:
+
+            flash(
+                "As senhas não coincidem.",
+                "error"
+            )
+
+            return redirect("/trocar_senha")
+
+        senha_hash = generate_password_hash(
+            nova_senha
+        )
+
+        db.session.execute(
+
+            db.text("""
+
+                UPDATE usuarios
+
+                SET
+
+                    senha = :senha,
+
+                    precisa_trocar_senha = FALSE
+
+                WHERE id = :id
+
+            """),
+
+            {
+                "senha": senha_hash,
+                "id": usuario["id"]
+            }
+
+        )
+
+        db.session.commit()
+
+        flash(
+            "Senha alterada com sucesso!",
+            "success"
+        )
+
+        return redirect("/")
+
+    return render_template(
+        "trocar_senha.html",
+        usuario=usuario
+    )
 
 
 # =========================
@@ -770,6 +883,162 @@ def assumir_chamado(chamado_id):
         }
 
     )
+    chamado = db.session.execute(
+
+    db.text("""
+
+        SELECT *
+
+        FROM chamados
+
+        WHERE id = :id
+
+    """),
+    {
+        "id": chamado_id
+    }
+    )
+    chamado = db.session.execute(
+
+    db.text("""
+
+        SELECT *
+
+        FROM chamados
+
+        WHERE id = :id
+
+    """),
+    {
+        "id": chamado_id
+    }
+
+    ).fetchone()
+    email_usuario = chamado.email
+
+    msg = Message(
+        subject="Seu chamado foi assumido",
+        recipients=[email_usuario]
+    )
+    
+    msg = Message(
+        subject="Seu chamado foi assumido",
+        recipients=[email_usuario]
+    )
+    msg.html = f"""
+    <div style="
+    background:#f4f7fb;
+    padding:40px;
+    font-family:Arial,sans-serif;
+">
+
+    <div style="
+        max-width:600px;
+        margin:auto;
+        background:white;
+        border-radius:16px;
+        overflow:hidden;
+        border:1px solid #dbe4ee;
+        box-shadow:0 4px 20px rgba(0,0,0,0.08);
+    ">
+
+        <div style="
+            background:#2563eb;
+            padding:25px;
+            color:white;
+        ">
+
+            <h1 style="
+                margin:0;
+                font-size:24px;
+            ">
+                Sistema de Chamados TI
+            </h1>
+
+        </div>
+
+        <div style="padding:30px;">
+
+            <h2 style="
+                color:#0f172a;
+                margin-top:0;
+            ">
+                Chamado em atendimento
+            </h2>
+
+            <p style="
+                color:#334155;
+                line-height:1.7;
+                font-size:15px;
+            ">
+                Olá,
+            </p>
+
+            <p style="
+                color:#334155;
+                line-height:1.7;
+                font-size:15px;
+            ">
+                Seu chamado foi assumido por um técnico
+                e já está em atendimento.
+            </p>
+
+            <div style="
+                background:#f8fafc;
+                border:1px solid #e2e8f0;
+                border-radius:10px;
+                padding:20px;
+                margin:25px 0;
+            ">
+
+                <p style="margin:0 0 10px 0;">
+                    <strong>Status:</strong>
+                    Em andamento
+                </p>
+
+                <p style="margin:0;">
+                    <strong>Técnico:</strong>
+                    {session["usuario"]["nome"]}
+                </p>
+
+            </div>
+
+            <p style="
+                color:#64748b;
+                font-size:14px;
+                line-height:1.6;
+            ">
+                Em breve a equipe de TI irá realizar
+                a análise do problema.
+            </p>
+
+        </div>
+
+        <div style="
+            background:#f8fafc;
+            padding:20px;
+            border-top:1px solid #e2e8f0;
+            text-align:center;
+        ">
+
+            <p style="
+                margin:0;
+                color:#94a3b8;
+                font-size:12px;
+            ">
+                Mensagem automática • Não responda este email
+            </p>
+
+        </div>
+
+    </div>
+
+</div>
+
+"""
+    msg.sender = ("Sistema TI", "helpdesk.tctelecom@gmail.com")
+
+    mail.send(msg)
 
     db.session.commit()
 
@@ -1836,6 +2105,60 @@ def desativar_usuario(id):
     )
 
     return redirect("/usuarios")
+
+# =========================
+# RESETAR SENHA
+# =========================
+
+@app.route("/resetar_senha/<int:id>")
+def resetar_senha(id):
+
+    usuario = session.get("usuario")
+
+    if not usuario:
+        return redirect("/login")
+
+    if usuario["tipo"] not in [
+        "ti",
+        "administracao"
+    ]:
+        return redirect("/")
+
+    nova_senha = "123456"
+
+    senha_hash = generate_password_hash(
+        nova_senha
+    )
+
+    db.session.execute(
+
+        db.text("""
+
+            UPDATE usuarios
+
+            SET senha = :senha,
+
+            precisa_trocar_senha = TRUE
+
+            WHERE id = :id
+
+        """),
+
+        {
+            "senha": senha_hash,
+            "id": id
+        }
+
+    )
+
+    db.session.commit()
+
+    flash(
+        "Senha resetada para: 123456",
+        "success"
+    )
+
+    return redirect("/usuarios")
 # =========================
 # IMPORTAR INVENTÁRIOS
 # =========================
@@ -2109,10 +2432,168 @@ def pesquisar_ativos():
 # =========================
 
 @app.route(
-    "/editar_posicao/<posicao>",
+    "/editar_posicao/<path:posicao>",
     methods=["GET", "POST"]
 )
 def editar_posicao(posicao):
+
+    usuario = session.get("usuario")
+
+    if not usuario:
+        return redirect("/login")
+
+    if usuario["tipo"] not in [
+        "ti",
+        "administracao"
+    ]:
+        return redirect("/")
+
+    posicao = urllib.parse.unquote(posicao)
+
+    posicao_db = db.session.execute(
+
+        db.text("""
+
+            SELECT *
+
+            FROM mapa_posicoes
+
+            WHERE posicao = :posicao
+
+        """),
+
+        {
+            "posicao": posicao
+        }
+
+    ).fetchone()
+
+    if not posicao_db:
+
+        flash(
+            "Posição não encontrada.",
+            "error"
+        )
+
+        return redirect("/")
+
+    ativo = None
+
+    if posicao_db.maquina:
+
+        ativo = db.session.execute(
+
+            db.text("""
+
+                SELECT *
+
+                FROM ativos
+
+                WHERE id_maquina = :maquina
+
+            """),
+
+            {
+                "maquina": posicao_db.maquina
+            }
+
+        ).fetchone()
+
+    if request.method == "POST":
+
+        nova_posicao = request.form.get(
+            "nova_posicao"
+        )
+
+        nova_maquina = request.form.get(
+            "maquina"
+        )
+
+        colaborador = request.form.get(
+            "colaborador"
+        )
+
+        # =========================
+        # ATUALIZA MAPA
+        # =========================
+
+        db.session.execute(
+
+            db.text("""
+
+                UPDATE mapa_posicoes
+
+                SET
+
+                    posicao = :nova_posicao,
+                    maquina = :maquina
+
+                WHERE id = :id
+
+            """),
+
+            {
+                "nova_posicao": nova_posicao,
+                "maquina": nova_maquina,
+                "id": posicao_db.id
+            }
+
+        )
+
+        # =========================
+        # ATUALIZA ATIVO
+        # =========================
+
+        if nova_maquina:
+
+            db.session.execute(
+
+                db.text("""
+
+                    UPDATE ativos
+
+                    SET usuario_atual = :usuario
+
+                    WHERE id_maquina = :maquina
+
+                """),
+
+                {
+                    "usuario": colaborador,
+                    "maquina": nova_maquina
+                }
+
+            )
+
+        db.session.commit()
+
+        flash(
+            "Posição atualizada com sucesso!",
+            "success"
+        )
+
+        if posicao_db.sala == "BL":
+            return redirect("/mapa_bl")
+
+        return redirect("/mapa_hunter")
+
+    return render_template(
+
+        "editar_posicao.html",
+
+        usuario=usuario,
+
+        posicao=posicao_db,
+
+        ativo=ativo
+
+    )
+# =========================
+# EXCLUIR POSIÇÃO
+# =========================
+
+@app.route("/excluir_posicao/<path:posicao>")
+def excluir_posicao(posicao):
 
     usuario = session.get("usuario")
 
@@ -2127,6 +2608,64 @@ def editar_posicao(posicao):
 
         return redirect("/")
 
+    sala_db = db.session.execute(
+
+        db.text("""
+
+            SELECT sala
+
+            FROM mapa_posicoes
+
+            WHERE posicao = :posicao
+
+        """),
+
+        {
+            "posicao": posicao
+        }
+
+    ).fetchone()
+
+    db.session.execute(
+
+        db.text("""
+
+            DELETE FROM mapa_posicoes
+
+            WHERE posicao = :posicao
+
+        """),
+
+        {
+            "posicao": posicao
+        }
+
+    )
+
+    db.session.commit()
+
+    flash(
+        "Posição excluída com sucesso!",
+        "success"
+    )
+
+    if sala_db:
+
+        if sala_db.sala == "BL":
+
+            return redirect(
+                url_for("mapa_bl")
+            )
+
+        return redirect(
+            url_for("mapa_hunter")
+        )
+
+    return redirect("/")
+    # =========================
+    # SALVAR ALTERAÇÕES
+    # =========================
+
     if request.method == "POST":
 
         nova_maquina = request.form.get(
@@ -2140,6 +2679,16 @@ def editar_posicao(posicao):
         nova_posicao = request.form.get(
             "nova_posicao"
         )
+
+        # limpa espaços
+        if nova_maquina:
+            nova_maquina = nova_maquina.strip()
+
+        if colaborador:
+            colaborador = colaborador.strip()
+
+        if nova_posicao:
+            nova_posicao = nova_posicao.strip()
 
         db.session.execute(
 
@@ -2199,9 +2748,15 @@ def editar_posicao(posicao):
 
                 return redirect("/mapa_bl")
 
-            return redirect("/mapa_hunter")
+            else:
+
+                return redirect("/mapa_hunter")
 
         return redirect("/")
+
+    # =========================
+    # BUSCAR POSIÇÃO
+    # =========================
 
     posicao_db = db.session.execute(
 
@@ -2221,9 +2776,21 @@ def editar_posicao(posicao):
 
     ).fetchone()
 
+    # evita erro caso não exista
+    if not posicao_db:
+
+        flash(
+            "Posição não encontrada.",
+            "error"
+        )
+
+        return redirect("/")
+
     return render_template(
 
         "editar_posicao.html",
+
+        usuario=usuario,
 
         posicao=posicao_db
 
@@ -2371,6 +2938,10 @@ def mapa_hunter():
     ]:
         return redirect("/")
 
+    # =========================
+    # ATIVOS HUNTER
+    # =========================
+
     maquinas = db.session.execute(
 
         db.text("""
@@ -2387,6 +2958,186 @@ def mapa_hunter():
 
             WHERE LOWER(setor)
             LIKE LOWER('%hunter%')
+
+        """)
+
+    ).fetchall()
+
+    # =========================
+    # CHAMADOS ABERTOS
+    # =========================
+
+    chamados_abertos = db.session.execute(
+
+        db.text("""
+
+            SELECT DISTINCT maquina
+
+            FROM chamados
+
+            WHERE status != 'resolvido'
+
+        """)
+
+    ).fetchall()
+
+    maquinas_com_chamado = [
+
+        c.maquina
+
+        for c in chamados_abertos
+
+        if c.maquina
+
+    ]
+
+    # =========================
+    # POSIÇÕES HUNTER
+    # =========================
+
+    mapa_db = db.session.execute(
+
+        db.text("""
+
+            SELECT
+                id,
+                posicao,
+                maquina,
+                colaborador,
+                sala
+
+            FROM mapa_posicoes
+
+            WHERE sala = 'Hunter'
+
+            ORDER BY posicao
+
+        """)
+
+    ).fetchall()
+
+    # =========================
+    # MONTAGEM MAPA
+    # =========================
+
+    mapa = {}
+
+    for item in mapa_db:
+
+        status = "livre"
+
+        if item.maquina in maquinas_com_chamado:
+
+            status = "problema"
+
+        maquina_info = None
+
+        for maquina in maquinas:
+
+            if (
+                str(maquina.id_maquina).strip()
+                ==
+                str(item.maquina).strip()
+            ):
+
+                maquina_info = {
+
+                    "modelo": maquina.modelo,
+                    "usuario_atual": maquina.usuario_atual,
+                    "marca": maquina.marca,
+                    "setor": maquina.setor
+
+                }
+
+                break
+
+        mapa[item.posicao] = {
+
+            "maquina": item.maquina,
+
+            "colaborador": (
+                maquina_info["usuario_atual"]
+                if maquina_info
+                else item.colaborador
+            ),
+
+            "status": status,
+
+            "info": maquina_info
+
+        }
+
+    # =========================
+    # CONTADORES
+    # =========================
+
+    total_desktops = len([
+
+        item for item in mapa_db
+
+        if "NOTEBOOK" not in item.posicao.upper()
+
+    ])
+
+    total_notebooks = len([
+
+        item for item in mapa_db
+
+        if "NOTEBOOK" in item.posicao.upper()
+
+    ])
+
+    total_chamados = len(maquinas_com_chamado)
+
+    # =========================
+    # RENDER
+    # =========================
+
+    return render_template(
+
+        "mapa_hunter.html",
+
+        usuario=usuario,
+
+        maquinas=maquinas,
+
+        mapa=mapa,
+
+        mapa_db=mapa_db,
+
+        maquinas_com_chamado=maquinas_com_chamado,
+
+        total_desktops=total_desktops,
+
+        total_notebooks=total_notebooks,
+
+        total_chamados=total_chamados
+
+    )
+# =========================
+# MAPA BL
+# =========================
+
+@app.route("/mapa_bl")
+def mapa_bl():
+
+    usuario = session.get("usuario")
+
+    if not usuario:
+        return redirect("/login")
+
+    maquinas = db.session.execute(
+
+        db.text("""
+
+            SELECT
+                id_maquina,
+                usuario_atual,
+                marca,
+                modelo,
+                setor
+
+            FROM ativos
 
         """)
 
@@ -2421,120 +3172,9 @@ def mapa_hunter():
         db.text("""
 
             SELECT
-                posicao,
-                maquina,
-                colaborador,
-                sala
-
-            FROM mapa_posicoes
-
-            WHERE sala = 'Hunter'
-
-            ORDER BY posicao
-
-        """)
-
-    ).fetchall()
-
-    mapa = {
-
-        item.posicao: {
-            "maquina": item.maquina,
-            "colaborador": item.colaborador
-        }
-
-        for item in mapa_db
-
-    }
-
-    return render_template(
-
-        "mapa_hunter.html",
-
-        usuario=usuario,
-
-        maquinas=maquinas,
-
-        mapa=mapa,
-
-        mapa_db=mapa_db,
-
-        maquinas_com_chamado=
-        maquinas_com_chamado
-
-    )
-
-# =========================
-# MAPA BL
-# =========================
-
-@app.route("/mapa_bl")
-def mapa_bl():
-
-    usuario = session.get("usuario")
-
-    if not usuario:
-        return redirect("/login")
-
-    if usuario["tipo"] not in [
-        "ti",
-        "administracao"
-    ]:
-        return redirect("/")
-
-    maquinas = db.session.execute(
-
-        db.text("""
-
-            SELECT
                 id,
-                id_maquina,
-                usuario_atual,
-                marca,
-                modelo,
-                setor
-
-            FROM ativos
-
-            WHERE LOWER(setor)
-            LIKE LOWER('%bl%')
-
-        """)
-
-    ).fetchall()
-
-    chamados_abertos = db.session.execute(
-
-        db.text("""
-
-            SELECT DISTINCT maquina
-
-            FROM chamados
-
-            WHERE status != 'Finalizado'
-
-        """)
-
-    ).fetchall()
-
-    maquinas_com_chamado = [
-
-        c.maquina
-
-        for c in chamados_abertos
-
-        if c.maquina
-
-    ]
-
-    mapa_db = db.session.execute(
-
-        db.text("""
-
-            SELECT
                 posicao,
                 maquina,
-                colaborador,
                 sala
 
             FROM mapa_posicoes
@@ -2547,33 +3187,575 @@ def mapa_bl():
 
     ).fetchall()
 
-    mapa = {
+    mapa = {}
 
-        item.posicao: {
+    for item in mapa_db:
+
+        status = "livre"
+
+        if item.maquina in maquinas_com_chamado:
+            status = "problema"
+
+        maquina_info = None
+
+        for maquina in maquinas:
+
+            if maquina.id_maquina == item.maquina:
+
+                maquina_info = {
+
+                    "modelo": maquina.modelo,
+                    "usuario_atual": maquina.usuario_atual,
+                    "marca": maquina.marca,
+                    "setor": maquina.setor
+
+                }
+
+                break
+
+        mapa[item.posicao] = {
+
             "maquina": item.maquina,
-            "colaborador": item.colaborador
+
+            "colaborador":
+            maquina_info["usuario_atual"]
+            if maquina_info
+            else None,
+
+            "status": status,
+
+            "info": maquina_info
+
         }
 
-        for item in mapa_db
+    total_desktops = len([
 
-    }
+        item for item in mapa_db
+
+        if (
+            item.posicao.startswith("1015")
+            or
+            item.posicao.startswith("1016")
+        )
+
+    ])
+
+    total_notebooks = len([
+
+        item for item in mapa_db
+
+        if "NOTEBOOK" in item.posicao.upper()
+
+    ])
+
+    total_chamados = len(maquinas_com_chamado)
 
     return render_template(
 
         "mapa_bl.html",
 
         usuario=usuario,
-
         maquinas=maquinas,
-
         mapa=mapa,
-
         mapa_db=mapa_db,
+        maquinas_com_chamado=maquinas_com_chamado,
 
-        maquinas_com_chamado=
-        maquinas_com_chamado
+        total_desktops=total_desktops,
+        total_notebooks=total_notebooks,
+        total_chamados=total_chamados
 
     )
+# =========================
+# NOVA POSIÇÃO
+# =========================
+
+@app.route(
+    "/nova_posicao",
+    methods=["GET", "POST"]
+)
+def nova_posicao():
+
+    usuario = session.get("usuario")
+
+    if not usuario:
+
+        return redirect("/login")
+
+    if usuario["tipo"] not in [
+        "ti",
+        "administracao"
+    ]:
+
+        return redirect("/")
+
+    if request.method == "POST":
+
+        sala = request.form.get(
+            "sala"
+        )
+
+        posicao = request.form.get(
+            "posicao"
+        )
+
+        maquina = request.form.get(
+            "maquina"
+        )
+
+        colaborador = request.form.get(
+            "colaborador"
+        )
+
+        # limpa espaços
+        if sala:
+            sala = sala.strip()
+
+        if posicao:
+            posicao = posicao.strip()
+
+        if maquina:
+            maquina = maquina.strip()
+
+        if colaborador:
+            colaborador = colaborador.strip()
+
+        # verifica se já existe
+        existe = db.session.execute(
+
+            db.text("""
+
+                SELECT id
+
+                FROM mapa_posicoes
+
+                WHERE posicao = :posicao
+
+            """),
+
+            {
+                "posicao": posicao
+            }
+
+        ).fetchone()
+
+        if existe:
+
+            flash(
+                "Essa posição já existe.",
+                "error"
+            )
+
+            return redirect("/nova_posicao")
+
+        db.session.execute(
+
+            db.text("""
+
+                INSERT INTO mapa_posicoes (
+
+                    sala,
+                    posicao,
+                    maquina,
+                    colaborador
+
+                )
+
+                VALUES (
+
+                    :sala,
+                    :posicao,
+                    :maquina,
+                    :colaborador
+
+                )
+
+            """),
+
+            {
+                "sala": sala,
+                "posicao": posicao,
+                "maquina": maquina,
+                "colaborador": colaborador
+            }
+
+        )
+
+        db.session.commit()
+
+        flash(
+            "Posição criada com sucesso!",
+            "success"
+        )
+
+        if sala == "BL":
+
+            return redirect("/mapa_bl")
+
+        return redirect("/mapa_hunter")
+
+    return render_template(
+
+        "nova_posicao.html",
+
+        usuario=usuario
+
+    )
+
+# =========================
+# MOVIMENTAR MÁQUINA
+# =========================
+
+@app.route(
+    "/movimentar_maquina",
+    methods=["GET", "POST"]
+)
+def movimentar_maquina():
+
+    usuario = session.get("usuario")
+
+    if not usuario:
+
+        return redirect("/login")
+
+    if usuario["tipo"] not in [
+        "ti",
+        "administracao"
+    ]:
+
+        return redirect("/")
+
+    posicoes = db.session.execute(
+
+        db.text("""
+
+            SELECT *
+
+            FROM mapa_posicoes
+
+            ORDER BY sala, posicao
+
+        """)
+
+    ).fetchall()
+
+    if request.method == "POST":
+
+        origem = request.form.get(
+            "origem"
+        )
+
+        destino = request.form.get(
+            "destino"
+        )
+
+        origem_db = db.session.execute(
+
+            db.text("""
+
+                SELECT *
+
+                FROM mapa_posicoes
+
+                WHERE posicao = :origem
+
+            """),
+
+            {
+                "origem": origem
+            }
+
+        ).fetchone()
+
+        destino_db = db.session.execute(
+
+            db.text("""
+
+                SELECT *
+
+                FROM mapa_posicoes
+
+                WHERE posicao = :destino
+
+            """),
+
+            {
+                "destino": destino
+            }
+
+        ).fetchone()
+
+        if not origem_db or not destino_db:
+
+            flash(
+                "Posição inválida.",
+                "error"
+            )
+
+            return redirect(
+                "/movimentar_maquina"
+            )
+
+        # move dados
+        db.session.execute(
+
+            db.text("""
+
+                UPDATE mapa_posicoes
+
+                SET
+
+                    maquina = :maquina,
+
+                    colaborador = :colaborador
+
+                WHERE posicao = :destino
+
+            """),
+
+            {
+                "maquina": origem_db.maquina,
+                "colaborador": origem_db.colaborador,
+                "destino": destino
+            }
+
+        )
+
+        # limpa origem
+        db.session.execute(
+
+            db.text("""
+
+                UPDATE mapa_posicoes
+
+                SET
+
+                    maquina = NULL,
+
+                    colaborador = NULL
+
+                WHERE posicao = :origem
+
+            """),
+
+            {
+                "origem": origem
+            }
+
+        )
+        
+        #histórico
+        db.session.execute(
+            db.text("""
+                    INSERT INTO movimentacoes_mapa(
+                    maquina,
+                    colaborador,
+                    origem,
+                    destino,
+                    usuario_responsavel
+                    )
+                    
+                    VALUES(
+                    :maquina,
+                    :colaborador,
+                    :origem,
+                    :destino,
+                    :usuario
+                    )
+                    """),
+                {
+                    "maquina": origem_db.maquina,
+                    "colaborador": origem_db.colaborador,
+                    "origem": origem,
+                    "destino": destino,
+                    "usuario": usuario["nome"]
+                }
+        )
+
+        db.session.commit()
+
+        flash(
+            "Movimentação realizada com sucesso!",
+            "success"
+        )
+
+        if origem_db.sala == "BL":
+
+            return redirect("/mapa_bl")
+
+        return redirect("/mapa_hunter")
+
+    return render_template(
+
+        "movimentar_maquina.html",
+
+        usuario=usuario,
+
+        posicoes=posicoes
+
+    )
+
+# =========================
+# HISTÓRICO MAPA
+# =========================
+
+@app.route("/historico_mapa")
+def historico_mapa():
+
+    usuario = session.get("usuario")
+
+    if not usuario:
+
+        return redirect("/login")
+
+    if usuario["tipo"] not in [
+        "ti",
+        "administracao"
+    ]:
+
+        return redirect("/")
+
+    historico = db.session.execute(
+
+        db.text("""
+
+            SELECT *
+
+            FROM movimentacoes_mapa
+
+            ORDER BY data_movimentacao DESC
+
+        """)
+
+    ).fetchall()
+
+    return render_template(
+
+        "historico_mapa.html",
+
+        usuario=usuario,
+
+        historico=historico
+
+    )
+
+# =========================
+# HISTÓRICO DA MÁQUINA
+# =========================
+
+@app.route("/historico_maquina/<id_maquina>")
+def historico_maquina(id_maquina):
+
+    usuario = session.get("usuario")
+
+    if not usuario:
+
+        return redirect("/login")
+
+    ativo = db.session.execute(
+
+        db.text("""
+
+            SELECT *
+
+            FROM ativos
+
+            WHERE id_maquina = :id_maquina
+
+        """),
+
+        {
+            "id_maquina": id_maquina
+        }
+
+    ).fetchone()
+
+    if not ativo:
+
+        flash(
+            "Máquina não encontrada.",
+            "error"
+        )
+
+        return redirect("/")
+
+    chamados = db.session.execute(
+
+        db.text("""
+
+            SELECT *
+
+            FROM chamados
+
+            WHERE maquina = :id_maquina
+
+            ORDER BY id DESC
+
+        """),
+
+        {
+            "id_maquina": id_maquina
+        }
+
+    ).fetchall()
+
+    movimentacoes = db.session.execute(
+
+        db.text("""
+
+            SELECT *
+
+            FROM movimentacoes_mapa
+
+            WHERE maquina = :id_maquina
+
+            ORDER BY data_movimentacao DESC
+
+        """),
+
+        {
+            "id_maquina": id_maquina
+        }
+
+    ).fetchall()
+
+    total_chamados = len(chamados)
+
+    chamados_abertos = len([
+
+        c for c in chamados
+
+        if c.status.lower() != "finalizado"
+
+    ])
+
+    chamados_finalizados = len([
+
+        c for c in chamados
+
+        if c.status.lower() == "finalizado"
+
+    ])
+
+    return render_template(
+
+        "historico_maquina.html",
+
+        usuario=usuario,
+
+        ativo=ativo,
+
+        chamados=chamados,
+
+        movimentacoes=movimentacoes,
+
+        total_chamados=total_chamados,
+
+        chamados_abertos=chamados_abertos,
+
+        chamados_finalizados=chamados_finalizados
+
+    )
+
 # =========================
 # TESTE BANCO
 # =========================
@@ -2598,6 +3780,26 @@ def debug_db():
         db.text("SELECT COUNT(*) FROM usuarios")
     ).fetchone()
     return f"Usuarios: {result[0]}"
+
+@app.route("/reset_admin")
+def reset_admin():
+
+    senha_hash = generate_password_hash("123")
+
+    db.session.execute(db.text("""
+
+        UPDATE usuarios
+        SET senha = :senha
+        WHERE nome = 'admin'
+
+    """), {
+        "senha": senha_hash
+    })
+
+    db.session.commit()
+
+    return "Senha resetada!"
+
 if __name__ == "__main__":
     app.run(
         host="0.0.0.0",
