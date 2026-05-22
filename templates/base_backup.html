@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+
+<html lang="pt-br">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>
+        Sistema de Chamados
+    </title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='style.css') }}"
+    >
+
+</head>
+
+<body>
+
+    <div class="layout">
+
+        <!-- SIDEBAR -->
+
+        <aside class="sidebar">
+
+            <div class="logo">
+
+                <h2>
+                    HelpDesk
+                </h2>
+
+            </div>
+
+            <nav class="menu">
+
+                <a href="/">
+                    Dashboard
+                </a>
+
+                <a href="/chamados">
+                    Chamados
+                </a>
+
+                {% if usuario.tipo in ["ti", "administracao"] %}
+
+                <a href="/inventario">
+                    Inventário
+                </a>
+
+                {% endif %}
+
+                {% if usuario.tipo == "ti" %}
+
+                <a href="/usuarios">
+                    Usuários
+                </a>
+
+                <a href="/historico">
+                    Histórico
+                </a>
+
+                {% endif %}
+
+                <a href="/logout" class="menu-sair">
+                    Sair
+                </a>
+
+            </nav>
+
+        </aside>
+
+        <!-- CONTEÚDO -->
+
+        <main class="conteudo">
+
+            <!-- TOPO -->
+
+            <header class="topbar">
+
+                <div>
+
+                    <h3>
+                        Sistema de Chamados
+                    </h3>
+
+                    <span>
+                        {{ usuario.nome }}
+                    </span>
+
+                </div>
+
+            </header>
+
+            <!-- FLASH -->
+
+            {% with messages =
+            get_flashed_messages(with_categories=true) %}
+
+                {% if messages %}
+
+                    {% for categoria, mensagem in messages %}
+
+                        <div class="alert {{ categoria }}">
+
+                            {{ mensagem }}
+
+                        </div>
+
+                    {% endfor %}
+
+                {% endif %}
+
+            {% endwith %}
+
+            <!-- CONTEÚDO -->
+
+            <section class="pagina">
+
+                {% block content %}
+                {% endblock %}
+
+            </section>
+
+        </main>
+
+    </div>
+
+</body>
+
+</html>

@@ -20,9 +20,27 @@
         href="{{ url_for('static', filename='style.css') }}"
     >
 
+    <link
+        rel="preconnect"
+        href="https://fonts.googleapis.com"
+    >
+
+    <link
+        rel="preconnect"
+        href="https://fonts.gstatic.com"
+        crossorigin
+    >
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet"
+    >
+
 </head>
 
 <body>
+
+    <div class="app-background"></div>
 
     <div class="layout">
 
@@ -30,49 +48,82 @@
 
         <aside class="sidebar">
 
-            <div class="logo">
+            <div class="sidebar-topo">
 
-                <h2>
-                    HelpDesk
-                </h2>
+                <div class="logo-box">
+
+                    <div class="logo-icon">
+                        H
+                    </div>
+
+                    <div>
+
+                        <h2 class="logo-texto">
+                            HelpDesk
+                        </h2>
+
+                        <span class="logo-sub">
+                            Sistema Interno
+                        </span>
+
+                    </div>
+
+                </div>
 
             </div>
 
             <nav class="menu">
 
-                <a href="/">
-                    Dashboard
+                <a href="/" class="menu-link">
+                    <span>
+                        Dashboard
+                    </span>
                 </a>
 
-                <a href="/chamados">
-                    Chamados
+                <a href="/chamados" class="menu-link">
+                    <span>
+                        Chamados
+                    </span>
                 </a>
 
                 {% if usuario.tipo in ["ti", "administracao"] %}
 
-                <a href="/inventario">
-                    Inventário
+                <a href="/inventario" class="menu-link">
+                    <span>
+                        Inventário
+                    </span>
                 </a>
 
                 {% endif %}
 
                 {% if usuario.tipo == "ti" %}
 
-                <a href="/usuarios">
-                    Usuários
+                <a href="/usuarios" class="menu-link">
+                    <span>
+                        Usuários
+                    </span>
                 </a>
 
-                <a href="/historico">
-                    Histórico
+                <a href="/historico" class="menu-link">
+                    <span>
+                        Histórico
+                    </span>
                 </a>
 
                 {% endif %}
 
-                <a href="/logout" class="menu-sair">
+            </nav>
+
+            <div class="sidebar-footer">
+
+                <a
+                    href="/logout"
+                    class="menu-sair"
+                >
                     Sair
                 </a>
 
-            </nav>
+            </div>
 
         </aside>
 
@@ -80,40 +131,70 @@
 
         <main class="conteudo">
 
-            <!-- TOPO -->
+            <!-- HEADER -->
 
             <header class="topbar">
 
-                <div>
+                <div class="topbar-esquerda">
 
                     <h3>
                         Sistema de Chamados
                     </h3>
 
                     <span>
-                        {{ usuario.nome }}
+                        Ambiente Corporativo
                     </span>
+
+                </div>
+
+                <div class="topbar-direita">
+
+                    <div class="usuario-box">
+
+                        <div class="avatar-user">
+
+                            {{ usuario.nome[0] }}
+
+                        </div>
+
+                        <div>
+
+                            <strong>
+                                {{ usuario.nome }}
+                            </strong>
+
+                            <small>
+                                {{ usuario.tipo }}
+                            </small>
+
+                        </div>
+
+                    </div>
 
                 </div>
 
             </header>
 
-            <!-- FLASH -->
+            <!-- ALERTAS -->
 
             {% with messages =
             get_flashed_messages(with_categories=true) %}
 
                 {% if messages %}
 
-                    {% for categoria, mensagem in messages %}
+                    <div class="flash-container">
 
-                        <div class="alert {{ categoria }}">
+                        {% for categoria, mensagem in messages %}
 
-                            {{ mensagem }}
+                            <div class="alert {{ categoria }}">
 
-                        </div>
+                                {{ mensagem }}
 
-                    {% endfor %}
+                            </div>
+
+                        {% endfor %}
+
+                    </div>
 
                 {% endif %}
 

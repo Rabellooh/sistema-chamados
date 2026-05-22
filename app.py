@@ -806,7 +806,7 @@ def adicionar_solucao(chamado_id):
         f"/chamado/{chamado_id}"
     )
 # =========================
-# ASSUMIR
+# ASSUMIR CHAMADO
 # =========================
 
 @app.route("/assumir/<int:chamado_id>")
@@ -815,6 +815,7 @@ def assumir_chamado(chamado_id):
     usuario = session.get("usuario")
 
     if not usuario:
+
         return redirect("/login")
 
     existe = db.session.execute(
@@ -883,162 +884,186 @@ def assumir_chamado(chamado_id):
         }
 
     )
+
     chamado = db.session.execute(
 
-    db.text("""
+        db.text("""
 
-        SELECT *
+            SELECT *
 
-        FROM chamados
+            FROM chamados
 
-        WHERE id = :id
+            WHERE id = :id
 
-    """),
-    {
-        "id": chamado_id
-    }
-    )
-    chamado = db.session.execute(
+        """),
 
-    db.text("""
-
-        SELECT *
-
-        FROM chamados
-
-        WHERE id = :id
-
-    """),
-    {
-        "id": chamado_id
-    }
+        {
+            "id": chamado_id
+        }
 
     ).fetchone()
-    email_usuario = chamado.email
 
-    msg = Message(
-        subject="Seu chamado foi assumido",
-        recipients=[email_usuario]
-    )
-    
-    msg = Message(
-        subject="Seu chamado foi assumido",
-        recipients=[email_usuario]
-    )
-    msg.html = f"""
-    <div style="
-    background:#f4f7fb;
-    padding:40px;
-    font-family:Arial,sans-serif;
-">
+    usuario_chamado = db.session.execute(
 
-    <div style="
-        max-width:600px;
-        margin:auto;
-        background:white;
-        border-radius:16px;
-        overflow:hidden;
-        border:1px solid #dbe4ee;
-        box-shadow:0 4px 20px rgba(0,0,0,0.08);
-    ">
+        db.text("""
 
-        <div style="
-            background:#2563eb;
-            padding:25px;
-            color:white;
-        ">
+            SELECT email
 
-            <h1 style="
-                margin:0;
-                font-size:24px;
-            ">
-                Sistema de Chamados TI
-            </h1>
+            FROM usuarios
 
-        </div>
+            WHERE nome = :nome
 
-        <div style="padding:30px;">
+        """),
 
-            <h2 style="
-                color:#0f172a;
-                margin-top:0;
-            ">
-                Chamado em atendimento
-            </h2>
+        {
+            "nome": chamado.usuario
+        }
 
-            <p style="
-                color:#334155;
-                line-height:1.7;
-                font-size:15px;
-            ">
-                Olá,
-            </p>
+    ).fetchone()
 
-            <p style="
-                color:#334155;
-                line-height:1.7;
-                font-size:15px;
-            ">
-                Seu chamado foi assumido por um técnico
-                e já está em atendimento.
-            </p>
+    email_usuario = None
+
+    if usuario_chamado:
+
+        email_usuario = usuario_chamado.email
+
+    if email_usuario:
+
+        try:
+
+            msg = Message(
+                subject="Seu chamado foi assumido",
+                recipients=[email_usuario]
+            )
+
+            msg.sender = (
+                "Sistema TI",
+                "helpdesk.tctelecom@gmail.com"
+            )
+
+            msg.html = f"""
 
             <div style="
-                background:#f8fafc;
-                border:1px solid #e2e8f0;
-                border-radius:10px;
-                padding:20px;
-                margin:25px 0;
+                background:#f4f7fb;
+                padding:40px;
+                font-family:Arial,sans-serif;
             ">
 
-                <p style="margin:0 0 10px 0;">
-                    <strong>Status:</strong>
-                    Em andamento
-                </p>
+                <div style="
+                    max-width:600px;
+                    margin:auto;
+                    background:white;
+                    border-radius:16px;
+                    overflow:hidden;
+                    border:1px solid #dbe4ee;
+                    box-shadow:0 4px 20px rgba(0,0,0,0.08);
+                ">
 
-                <p style="margin:0;">
-                    <strong>Técnico:</strong>
-                    {session["usuario"]["nome"]}
-                </p>
+                    <div style="
+                        background:#2563eb;
+                        padding:25px;
+                        color:white;
+                    ">
+
+                        <h1 style="
+                            margin:0;
+                            font-size:24px;
+                        ">
+                            Sistema de Chamados TI
+                        </h1>
+
+                    </div>
+
+                    <div style="padding:30px;">
+
+                        <h2 style="
+                            color:#0f172a;
+                            margin-top:0;
+                        ">
+                            Chamado em atendimento
+                        </h2>
+
+                        <p style="
+                            color:#334155;
+                            line-height:1.7;
+                            font-size:15px;
+                        ">
+                            Olá,
+                        </p>
+
+                        <p style="
+                            color:#334155;
+                            line-height:1.7;
+                            font-size:15px;
+                        ">
+                            Seu chamado foi assumido
+                            e já está em atendimento.
+                        </p>
+
+                        <div style="
+                            background:#f8fafc;
+                            border:1px solid #e2e8f0;
+                            border-radius:10px;
+                            padding:20px;
+                            margin:25px 0;
+                        ">
+
+                            <p style="margin:0 0 10px 0;">
+                                <strong>Status:</strong>
+                                Em andamento
+                            </p>
+
+                            <p style="margin:0 0 10px 0;">
+                                <strong>Técnico:</strong>
+                                {session["usuario"]["nome"]}
+                            </p>
+
+                            <p style="margin:0;">
+                                <strong>Chamado:</strong>
+                                #{chamado.id}
+                            </p>
+
+                        </div>
+
+                        <p style="
+                            color:#64748b;
+                            font-size:14px;
+                            line-height:1.6;
+                        ">
+                            Em breve a equipe de TI
+                            irá analisar o problema.
+                        </p>
+
+                    </div>
+
+                    <div style="
+                        background:#f8fafc;
+                        padding:20px;
+                        border-top:1px solid #e2e8f0;
+                        text-align:center;
+                    ">
+
+                        <p style="
+                            margin:0;
+                            color:#94a3b8;
+                            font-size:12px;
+                        ">
+                            Mensagem automática • Não responda este email
+                        </p>
+
+                    </div>
+
+                </div>
 
             </div>
 
-            <p style="
-                color:#64748b;
-                font-size:14px;
-                line-height:1.6;
-            ">
-                Em breve a equipe de TI irá realizar
-                a análise do problema.
-            </p>
+            """
 
-        </div>
+            mail.send(msg)
 
-        <div style="
-            background:#f8fafc;
-            padding:20px;
-            border-top:1px solid #e2e8f0;
-            text-align:center;
-        ">
+        except Exception as e:
 
-            <p style="
-                margin:0;
-                color:#94a3b8;
-                font-size:12px;
-            ">
-                Mensagem automática • Não responda este email
-            </p>
-
-        </div>
-
-    </div>
-
-</div>
-
-"""
-    msg.sender = ("Sistema TI", "helpdesk.tctelecom@gmail.com")
-
-    mail.send(msg)
+            print(e)
 
     db.session.commit()
 
@@ -1633,13 +1658,74 @@ def inventario():
 
     ).fetchall()
 
+    total_ativos = db.session.execute(
+
+        db.text("""
+
+            SELECT COUNT(*)
+
+            FROM ativos
+
+        """)
+
+    ).scalar()
+
+    total_setores = db.session.execute(
+
+        db.text("""
+
+            SELECT COUNT(DISTINCT setor)
+
+            FROM ativos
+
+        """)
+
+    ).scalar()
+
+    total_colaboradores = db.session.execute(
+
+        db.text("""
+
+            SELECT COUNT(DISTINCT usuario_atual)
+
+            FROM ativos
+
+            WHERE usuario_atual IS NOT NULL
+
+        """)
+
+    ).scalar()
+
+    maquinas_chamado = db.session.execute(
+
+        db.text("""
+
+            SELECT COUNT(DISTINCT maquina)
+
+            FROM chamados
+
+            WHERE status != 'resolvido'
+
+        """)
+
+    ).scalar()
+
     return render_template(
 
         "inventario.html",
 
+        usuario=usuario,
+
         ativos=ativos,
 
-        usuario=usuario
+        total_ativos=total_ativos,
+
+        total_setores=total_setores,
+
+        total_colaboradores=total_colaboradores,
+
+        maquinas_chamado=maquinas_chamado
+
     )
 # =========================
 # USUÁRIOS
@@ -3514,7 +3600,11 @@ def movimentar_maquina():
 
             {
                 "maquina": origem_db.maquina,
-                "colaborador": origem_db.colaborador,
+                "colaborador": (
+                    ativo_origem.usuario_atual
+                    if ativo_origem
+                    else None
+                ),
                 "destino": destino
             }
 
@@ -3799,6 +3889,84 @@ def reset_admin():
     db.session.commit()
 
     return "Senha resetada!"
+
+# =========================
+# API INVENTÁRIO
+# =========================
+@app.route("/api/inventario")
+def api_inventario():
+
+    usuario = session.get("usuario")
+
+    if not usuario:
+
+        return {
+            "erro": "Não autenticado"
+        }, 401
+
+    if usuario["tipo"] not in [
+        "ti",
+        "administracao"
+    ]:
+
+        return {
+            "erro": "Sem permissão"
+        }, 403
+
+    dados = db.session.execute(
+
+        db.text("""
+
+            SELECT
+
+                usuario_atual,
+                id_maquina,
+                marca,
+                modelo,
+                sistema_operacional,
+                memoria_ram,
+                armazenamento,
+                setor,
+                status,
+                observacoes
+
+            FROM ativos
+
+            ORDER BY usuario_atual
+
+        """)
+
+    ).fetchall()
+
+    inventario = {}
+
+    for item in dados:
+
+        chave = item.usuario_atual
+
+        if not chave:
+
+            chave = "SEM_USUARIO"
+
+        if chave not in inventario:
+
+            inventario[chave] = []
+
+        inventario[chave].append({
+
+            "patrimonio": item.id_maquina,
+            "marca": item.marca,
+            "modelo": item.modelo,
+            "sistema_operacional": item.sistema_operacional,
+            "memoria_ram": item.memoria_ram,
+            "armazenamento": item.armazenamento,
+            "setor": item.setor,
+            "status": item.status,
+            "observacoes": item.observacoes
+
+        })
+
+    return inventario
 
 if __name__ == "__main__":
     app.run(
