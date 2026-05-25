@@ -90,6 +90,47 @@
     </div>
 
 </div>
+<!-- RESUMO KANBAN -->
+
+<div class="grid">
+
+    <div class="card stat">
+
+        <span>
+            Tarefas Pendentes
+        </span>
+
+        <h1>
+            {{ tarefas_pendentes }}
+        </h1>
+
+    </div>
+
+    <div class="card stat">
+
+        <span>
+            Em andamento
+        </span>
+
+        <h1 class="txt-andamento">
+            {{ tarefas_andamento }}
+        </h1>
+
+    </div>
+
+    <div class="card stat">
+
+        <span>
+            Aguardando
+        </span>
+
+        <h1 class="txt-warning">
+            {{ tarefas_aguardando }}
+        </h1>
+
+    </div>
+
+</div>
 <!-- MAPAS -->
 
 <div class="card card-mapas-dashboard">
@@ -137,7 +178,138 @@
     </div>
 
 </div>
+<!-- OPERAÇÕES TI -->
 
+<div class="grid">
+
+    <!-- TAREFAS CRÍTICAS -->
+
+    <div class="card">
+
+        <div class="card-header-dashboard">
+
+            <h2>
+                Tarefas Críticas
+            </h2>
+
+            <a
+                href="/tarefas"
+                class="btn-mini"
+            >
+                Abrir Kanban
+            </a>
+
+        </div>
+
+        {% if tarefas_criticas %}
+
+            {% for t in tarefas_criticas %}
+
+            <div class="item-dashboard">
+
+                <div>
+
+                    <strong>
+                        {{ t.titulo }}
+                    </strong>
+
+                    <p>
+                        {{ t.responsavel }}
+                    </p>
+
+                </div>
+
+                <span class="badge badge-critico">
+                    crítica
+                </span>
+
+            </div>
+
+            {% endfor %}
+
+        {% else %}
+
+            <p class="texto-secundario">
+                Nenhuma tarefa crítica.
+            </p>
+
+        {% endif %}
+
+    </div>
+
+    <!-- MÁQUINAS COM PROBLEMA -->
+
+    <div class="card">
+
+        <h2 style="margin-bottom:20px;">
+            Máquinas com chamados
+        </h2>
+
+        {% for m in maquinas_problema %}
+
+        <div class="item-dashboard">
+
+            <span>
+                {{ m.maquina }}
+            </span>
+
+            <span class="badge aberto">
+                problema
+            </span>
+
+        </div>
+
+        {% endfor %}
+
+    </div>
+
+</div>
+<!-- ÚLTIMAS MOVIMENTAÇÕES -->
+
+<div class="card">
+
+    <div class="card-header-dashboard">
+
+        <h2>
+            Últimas movimentações
+        </h2>
+
+        <a
+            href="/historico_mapa"
+            class="btn-mini"
+        >
+            Ver histórico
+        </a>
+
+    </div>
+
+    {% for mov in movimentacoes %}
+
+    <div class="item-dashboard">
+
+        <div>
+
+            <strong>
+                {{ mov.maquina }}
+            </strong>
+
+            <p>
+                {{ mov.origem }}
+                →
+                {{ mov.destino }}
+            </p>
+
+        </div>
+
+        <span>
+            {{ mov.usuario_responsavel }}
+        </span>
+
+    </div>
+
+    {% endfor %}
+
+</div>
 
 <!-- RANKINGS -->
 

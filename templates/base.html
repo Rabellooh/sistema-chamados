@@ -72,47 +72,91 @@
 
             </div>
 
+            <!-- MENU -->
+
             <nav class="menu">
 
-                <a href="/" class="menu-link">
-                    <span>
-                        Dashboard
-                    </span>
-                </a>
+                <!-- OPERACIONAL -->
 
-                <a href="/chamados" class="menu-link">
-                    <span>
-                        Chamados
+                <div class="menu-grupo">
+
+                    <span class="menu-titulo">
+                        OPERACIONAL
                     </span>
-                </a>
+
+                    <a href="/" class="menu-link">
+                        Dashboard
+                    </a>
+
+                    <a href="/chamados" class="menu-link">
+                        Chamados
+                    </a>
+
+                    {% if usuario.tipo == "ti" %}
+
+                    <a href="/tarefas" class="menu-link">
+                        Tarefas TI
+                    </a>
+
+                    {% endif %}
+
+                </div>
+
+                <!-- GESTÃO -->
 
                 {% if usuario.tipo in ["ti", "administracao"] %}
 
-                <a href="/inventario" class="menu-link">
-                    <span>
-                        Inventário
+                <div class="menu-grupo">
+
+                    <span class="menu-titulo">
+                        GESTÃO
                     </span>
-                </a>
+
+                    <a href="/inventario" class="menu-link">
+                        Inventário
+                    </a>
+
+                    {% if usuario.tipo == "ti" %}
+
+                    <a href="/usuarios" class="menu-link">
+                        Usuários
+                    </a>
+
+                    <a href="/historico" class="menu-link">
+                        Histórico
+                    </a>
+
+                    {% endif %}
+
+                </div>
 
                 {% endif %}
 
-                {% if usuario.tipo == "ti" %}
+                <!-- MAPAS -->
 
-                <a href="/usuarios" class="menu-link">
-                    <span>
-                        Usuários
-                    </span>
-                </a>
+                {% if usuario.tipo in ["ti", "administracao"] %}
 
-                <a href="/historico" class="menu-link">
-                    <span>
-                        Histórico
+                <div class="menu-grupo">
+
+                    <span class="menu-titulo">
+                        MAPAS
                     </span>
-                </a>
+
+                    <a href="/mapa_hunter" class="menu-link">
+                        Mapa Hunter
+                    </a>
+
+                    <a href="/mapa_bl" class="menu-link">
+                        Mapa BL
+                    </a>
+
+                </div>
 
                 {% endif %}
 
             </nav>
+
+            <!-- FOOTER -->
 
             <div class="sidebar-footer">
 
@@ -148,6 +192,35 @@
                 </div>
 
                 <div class="topbar-direita">
+
+                    <!-- AÇÕES -->
+
+                    <div class="acoes-topbar">
+
+                        <button
+                            onclick="window.history.back()"
+                            class="topbar-btn"
+                        >
+                            ← Voltar
+                        </button>
+
+                        <a
+                            href="/"
+                            class="topbar-btn"
+                        >
+                            Dashboard
+                        </a>
+
+                        <button
+                            onclick="location.reload()"
+                            class="topbar-btn"
+                        >
+                            Atualizar
+                        </button>
+
+                    </div>
+
+                    <!-- USUÁRIO -->
 
                     <div class="usuario-box">
 

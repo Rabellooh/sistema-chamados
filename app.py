@@ -287,6 +287,113 @@ def dashboard():
 
     if usuario["tipo"] == "ti":
 
+        # =========================
+        # KANBAN
+        # =========================
+
+        tarefas_pendentes = db.session.execute(
+
+            text("""
+
+                SELECT COUNT(*)
+
+                FROM tarefas
+
+                WHERE LOWER(status) = 'pendente'
+
+            """)
+
+        ).scalar()
+
+        tarefas_andamento = db.session.execute(
+
+            text("""
+
+                SELECT COUNT(*)
+
+                FROM tarefas
+
+                WHERE LOWER(status) = 'andamento'
+
+            """)
+
+        ).scalar()
+
+        tarefas_aguardando = db.session.execute(
+
+            text("""
+
+                SELECT COUNT(*)
+
+                FROM tarefas
+
+                WHERE LOWER(status) = 'aguardando'
+
+            """)
+
+        ).scalar()
+
+        tarefas_criticas = db.session.execute(
+
+            text("""
+
+                SELECT *
+
+                FROM tarefas
+
+                WHERE LOWER(prioridade) = 'critica'
+
+                AND LOWER(status) != 'finalizado'
+
+                ORDER BY id DESC
+
+                LIMIT 5
+
+            """)
+
+        ).fetchall()
+
+        # =========================
+        # MÁQUINAS COM PROBLEMAS
+        # =========================
+
+        maquinas_problema = db.session.execute(
+
+            text("""
+
+                SELECT DISTINCT maquina
+
+                FROM chamados
+
+                WHERE status != 'resolvido'
+                AND maquina IS NOT NULL
+
+                LIMIT 10
+
+            """)
+
+        ).fetchall()
+
+        # =========================
+        # ÚLTIMAS MOVIMENTAÇÕES
+        # =========================
+
+        movimentacoes = db.session.execute(
+
+            text("""
+
+                SELECT *
+
+                FROM movimentacoes_mapa
+
+                ORDER BY data_movimentacao DESC
+
+                LIMIT 5
+
+            """)
+
+        ).fetchall()
+
         return render_template(
 
             "dashboard_ti.html",
@@ -311,7 +418,17 @@ def dashboard():
 
             problemas_json=json.dumps(
                 dict(problemas)
-            )
+            ),
+
+            tarefas_pendentes=tarefas_pendentes,
+            tarefas_andamento=tarefas_andamento,
+            tarefas_aguardando=tarefas_aguardando,
+
+            tarefas_criticas=tarefas_criticas,
+
+            maquinas_problema=maquinas_problema,
+
+            movimentacoes=movimentacoes
 
         )
 
@@ -3845,6 +3962,408 @@ def historico_maquina(id_maquina):
         chamados_finalizados=chamados_finalizados
 
     )
+# =========================
+# KANBAN - TAREFAS TI
+# =========================
+
+# =========================
+# TAREFAS
+# =========================
+
+@app.route("/tarefas")
+def tarefas():
+
+    usuario = session.get("usuario")
+
+    if not usuario:
+        return redirect("/login")
+
+    if usuario["tipo"] != "ti":
+        return redirect("/")
+
+    pendentes = db.session.execute(
+
+        db.text("""
+
+            SELECT *
+
+            FROM tarefas
+
+            WHERE LOWER(status) = 'pendente'
+
+            ORDER BY id DESC
+
+        """)
+
+    ).fetchall()
+
+    andamento = db.session.execute(
+
+        db.text("""
+
+            SELECT *
+
+            FROM tarefas
+
+            WHERE LOWER(status) = 'andamento'
+
+            ORDER BY id DESC
+
+        """)
+
+    ).fetchall()
+
+    aguardando = db.session.execute(
+
+        db.text("""
+
+            SELECT *
+
+            FROM tarefas
+
+            WHERE LOWER(status) = 'aguardando'
+
+            ORDER BY id DESC
+
+        """)
+
+    ).fetchall()
+
+    finalizadas = db.session.execute(
+
+        db.text("""
+
+            SELECT *
+
+            FROM tarefas
+
+            WHERE LOWER(status) = 'finalizado'
+
+            ORDER BY id DESC
+
+        """)
+
+    ).fetchall()
+
+    return render_template(
+
+        "tarefas.html",
+
+        usuario=usuario,
+
+        pendentes=pendentes,
+
+        andamento=andamento,
+
+        aguardando=aguardando,
+
+        finalizadas=finalizadas
+
+    )
+
+
+# =========================
+# NOVA TAREFA
+# =========================
+
+@app.route(
+    "/nova_tarefa",
+    methods=["POST"]
+)
+def nova_tarefa():
+
+    usuario = session.get("usuario")
+
+    if not usuario:
+        return redirect("/login")
+
+    if usuario["tipo"] != "ti":
+        return redirect("/")
+
+    dados = {
+
+        "titulo":
+        request.form.get("titulo"),
+
+        "descricao":
+        request.form.get("descricao"),
+
+        "prioridade":
+        request.form.get("prioridade"),
+
+        "responsavel":
+        request.form.get("responsavel"),
+
+        "setor":
+        request.form.get("setor"),
+
+        "prazo":
+        request.form.get("prazo") or None,
+
+        "criado_por":
+        usuario["nome"]
+
+    }
+
+    db.session.execute(
+
+        db.text("""
+
+            INSERT INTO tarefas (
+
+                titulo,
+                descricao,
+                prioridade,
+                responsavel,
+                setor,
+                prazo,
+                status,
+                criado_por
+
+            )
+
+            VALUES (
+
+                :titulo,
+                :descricao,
+                :prioridade,
+                :responsavel,
+                :setor,
+                :prazo,
+                'pendente',
+                :criado_por
+
+            )
+
+        """),
+
+        dados
+
+    )
+
+    db.session.commit()
+
+    flash(
+        "Tarefa criada com sucesso!",
+        "success"
+    )
+
+    return redirect("/tarefas")
+
+
+# =========================
+# ALTERAR STATUS
+# =========================
+
+@app.route("/mover_tarefa/<int:id>/<status>")
+def mover_tarefa(id, status):
+
+    usuario = session.get("usuario")
+
+    if not usuario:
+        return redirect("/login")
+
+    if usuario["tipo"] != "ti":
+        return redirect("/")
+
+    status_validos = [
+        "pendente",
+        "andamento",
+        "aguardando",
+        "finalizado"
+    ]
+
+    if status not in status_validos:
+
+        flash(
+            "Status inválido.",
+            "error"
+        )
+
+        return redirect("/tarefas")
+
+    db.session.execute(
+
+        db.text("""
+
+            UPDATE tarefas
+
+            SET status = :status
+
+            WHERE id = :id
+
+        """),
+
+        {
+            "id": id,
+            "status": status
+        }
+
+    )
+
+    db.session.commit()
+
+    flash(
+        "Status atualizado!",
+        "success"
+    )
+
+    return redirect("/tarefas")
+
+
+# =========================
+# EDITAR TAREFA
+# =========================
+
+@app.route(
+    "/editar_tarefa/<int:id>",
+    methods=["GET", "POST"]
+)
+def editar_tarefa(id):
+
+    usuario = session.get("usuario")
+
+    if not usuario:
+        return redirect("/login")
+
+    if usuario["tipo"] != "ti":
+        return redirect("/")
+
+    tarefa = db.session.execute(
+
+        db.text("""
+
+            SELECT *
+
+            FROM tarefas
+
+            WHERE id = :id
+
+        """),
+
+        {
+            "id": id
+        }
+
+    ).fetchone()
+
+    if not tarefa:
+
+        flash(
+            "Tarefa não encontrada.",
+            "error"
+        )
+
+        return redirect("/tarefas")
+
+    if request.method == "POST":
+
+        dados = {
+
+            "id": id,
+
+            "titulo":
+            request.form.get("titulo"),
+
+            "descricao":
+            request.form.get("descricao"),
+
+            "prioridade":
+            request.form.get("prioridade"),
+
+            "responsavel":
+            request.form.get("responsavel"),
+
+            "setor":
+            request.form.get("setor"),
+
+            "prazo":
+            request.form.get("prazo") or None
+
+        }
+
+        db.session.execute(
+
+            db.text("""
+
+                UPDATE tarefas
+
+                SET
+
+                    titulo = :titulo,
+                    descricao = :descricao,
+                    prioridade = :prioridade,
+                    responsavel = :responsavel,
+                    setor = :setor,
+                    prazo = :prazo
+
+                WHERE id = :id
+
+            """),
+
+            dados
+
+        )
+
+        db.session.commit()
+
+        flash(
+            "Tarefa atualizada!",
+            "success"
+        )
+
+        return redirect("/tarefas")
+
+    return render_template(
+
+        "editar_tarefa.html",
+
+        usuario=usuario,
+
+        tarefa=tarefa
+
+    )
+
+
+# =========================
+# EXCLUIR TAREFA
+# =========================
+
+@app.route("/excluir_tarefa/<int:id>")
+def excluir_tarefa(id):
+
+    usuario = session.get("usuario")
+
+    if not usuario:
+        return redirect("/login")
+
+    if usuario["tipo"] != "ti":
+        return redirect("/")
+
+    db.session.execute(
+
+        db.text("""
+
+            DELETE FROM tarefas
+
+            WHERE id = :id
+
+        """),
+
+        {
+            "id": id
+        }
+
+    )
+
+    db.session.commit()
+
+    flash(
+        "Tarefa excluída!",
+        "success"
+    )
+
+    return redirect("/tarefas")
 
 # =========================
 # TESTE BANCO

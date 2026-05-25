@@ -92,15 +92,14 @@ SIDEBAR
 
 .sidebar{
     width:270px;
-    background:rgba(2,6,23,.88);
-    backdrop-filter:blur(18px);
-    border-right:1px solid rgba(255,255,255,.05);
-    padding:24px;
+    min-width:270px;
+    height:100vh;
+    background:#020617;
+    border-right:1px solid #1e293b;
+    padding:26px 22px;
     display:flex;
     flex-direction:column;
-    box-shadow:
-    10px 0 40px rgba(0,0,0,.25);
-    height:100vh;
+    overflow:hidden;
     position:sticky;
     top:0;
 }
@@ -938,15 +937,14 @@ RESPONSIVO
 
     .sidebar{
         width:270px;
-        background:rgba(2,6,23,.88);
-        backdrop-filter:blur(18px);
-        border-right:1px solid rgba(255,255,255,.05);
-        padding:24px;
+        min-width:270px;
+        height:100vh;
+        background:#020617;
+        border-right:1px solid #1e293b;
+        padding:26px 22px;
         display:flex;
         flex-direction:column;
-        box-shadow:
-        10px 0 40px rgba(0,0,0,.25);
-        height:100vh;
+        overflow:hidden;
         position:sticky;
         top:0;
     }
@@ -1984,4 +1982,634 @@ SIDEBAR FOOTER
 
     box-shadow:
     0 10px 25px rgba(239,68,68,.25);
+}
+/* =========================================================
+KANBAN PREMIUM
+========================================================= */
+
+.kanban-header{
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:center;
+
+    gap:30px;
+
+    margin-bottom:30px;
+
+    flex-wrap:wrap;
+}
+
+.titulo-kanban{
+    font-size:34px;
+
+    font-weight:700;
+
+    margin-bottom:6px;
+
+    color:#f8fafc;
+}
+
+.subtitulo-kanban{
+    color:#94a3b8;
+
+    font-size:15px;
+}
+
+/* =========================================================
+STATS
+========================================================= */
+
+.kanban-stats{
+    display:flex;
+
+    gap:16px;
+
+    flex-wrap:wrap;
+}
+
+.stat-box{
+    background:#111827;
+
+    border:1px solid #334155;
+
+    border-radius:18px;
+
+    padding:16px 22px;
+
+    min-width:120px;
+
+    text-align:center;
+
+    box-shadow:
+    0 4px 20px rgba(0,0,0,.25);
+}
+
+.stat-box span{
+    display:block;
+
+    font-size:28px;
+
+    font-weight:700;
+
+    color:#3b82f6;
+
+    margin-bottom:6px;
+}
+
+.stat-box p{
+    color:#94a3b8;
+
+    font-size:13px;
+}
+
+/* =========================================================
+FORM
+========================================================= */
+
+.kanban-form-card{
+    margin-bottom:30px;
+}
+
+.form-grid-kanban{
+    display:grid;
+
+    grid-template-columns:
+    repeat(auto-fit,minmax(220px,1fr));
+
+    gap:16px;
+}
+
+.form-grid-kanban textarea{
+    min-height:110px;
+
+    resize:vertical;
+
+    grid-column:1/-1;
+}
+
+.btn-criar-task{
+    height:50px;
+
+    font-size:15px;
+
+    font-weight:600;
+}
+
+/* =========================================================
+KANBAN
+========================================================= */
+
+.kanban{
+    display:grid;
+
+    grid-template-columns:
+    repeat(auto-fit,minmax(320px,1fr));
+
+    gap:24px;
+
+    align-items:start;
+}
+
+/* =========================================================
+COLUNAS
+========================================================= */
+
+.kanban-coluna{
+    background:#0f172a;
+
+    border:1px solid #1e293b;
+
+    border-radius:24px;
+
+    padding:20px;
+
+    min-height:650px;
+
+    box-shadow:
+    0 8px 30px rgba(0,0,0,.25);
+}
+
+.kanban-topo{
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:center;
+
+    margin-bottom:20px;
+
+    padding-bottom:14px;
+
+    border-bottom:1px solid #1e293b;
+}
+
+.kanban-topo h2{
+    font-size:20px;
+
+    font-weight:700;
+
+    color:#f8fafc;
+}
+
+.badge-coluna{
+    background:#1e293b;
+
+    color:#cbd5e1;
+
+    padding:6px 12px;
+
+    border-radius:999px;
+
+    font-size:13px;
+
+    font-weight:600;
+}
+
+/* =========================================================
+CARDS
+========================================================= */
+
+.task-card{
+    background:#111827;
+
+    border-radius:22px;
+
+    padding:20px;
+
+    margin-bottom:18px;
+
+    border:1px solid #1e293b;
+
+    border-left:5px solid #3b82f6;
+
+    transition:.25s ease;
+
+    position:relative;
+
+    overflow:hidden;
+}
+
+.task-card:hover{
+    transform:translateY(-4px);
+
+    box-shadow:
+    0 12px 25px rgba(0,0,0,.35);
+}
+
+.task-card h3{
+    color:#f8fafc;
+
+    font-size:18px;
+
+    margin-bottom:12px;
+
+    line-height:1.4;
+}
+
+.task-card p{
+    color:#cbd5e1;
+
+    font-size:14px;
+
+    line-height:1.6;
+
+    margin-bottom:18px;
+}
+
+/* =========================================================
+PRIORIDADE LABEL
+========================================================= */
+
+.task-prioridade{
+    display:inline-flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    padding:6px 12px;
+
+    border-radius:999px;
+
+    font-size:11px;
+
+    font-weight:700;
+
+    letter-spacing:.5px;
+
+    margin-bottom:14px;
+
+    background:#1e293b;
+
+    color:#cbd5e1;
+}
+
+/* =========================================================
+INFO
+========================================================= */
+
+.task-info{
+    display:flex;
+
+    flex-direction:column;
+
+    gap:8px;
+
+    margin-bottom:18px;
+}
+
+.task-info span{
+    color:#94a3b8;
+
+    font-size:13px;
+}
+
+/* =========================================================
+ACTIONS
+========================================================= */
+
+.task-actions{
+    display:flex;
+
+    flex-wrap:wrap;
+
+    gap:10px;
+}
+
+.btn-mini{
+    display:inline-flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    padding:9px 14px;
+
+    border-radius:12px;
+
+    background:#1e293b;
+
+    color:#f8fafc;
+
+    text-decoration:none;
+
+    font-size:13px;
+
+    font-weight:600;
+
+    transition:.2s;
+}
+
+.btn-mini:hover{
+    background:#334155;
+}
+
+.btn-danger{
+    background:#7f1d1d;
+}
+
+.btn-danger:hover{
+    background:#991b1b;
+}
+
+/* =========================================================
+PRIORIDADES
+========================================================= */
+
+.prioridade-baixa{
+    border-left-color:#22c55e;
+}
+
+.prioridade-media{
+    border-left-color:#f59e0b;
+}
+
+.prioridade-alta{
+    border-left-color:#ef4444;
+}
+
+.prioridade-critica{
+    border-left-color:#dc2626;
+}
+
+/* =========================================================
+RESPONSIVO
+========================================================= */
+
+@media(max-width:900px){
+
+    .kanban{
+        grid-template-columns:1fr;
+    }
+
+    .kanban-coluna{
+        min-height:auto;
+    }
+
+    .kanban-header{
+        flex-direction:column;
+
+        align-items:flex-start;
+    }
+
+    .kanban-stats{
+        width:100%;
+    }
+
+    .stat-box{
+        flex:1;
+    }
+
+}
+/* =========================================================
+DASHBOARD TI
+========================================================= */
+
+.card-header-dashboard{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:20px;
+}
+
+.item-dashboard{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+
+    gap:15px;
+
+    padding:14px 0;
+
+    border-bottom:1px solid #334155;
+}
+
+.item-dashboard:last-child{
+    border-bottom:none;
+}
+
+.item-dashboard p{
+    margin-top:4px;
+    color:#94a3b8;
+    font-size:13px;
+}
+
+.texto-secundario{
+    color:#94a3b8;
+}
+
+.badge-critico{
+    background:#7f1d1d;
+    color:#fecaca;
+}
+
+.txt-warning{
+    color:#f59e0b;
+}
+/* =========================================================
+SUBTOPBAR
+========================================================= */
+
+.subtopbar{
+
+    display:flex;
+
+    gap:12px;
+
+    align-items:center;
+
+    flex-wrap:wrap;
+
+    margin-bottom:25px;
+
+    padding:14px 0;
+}
+
+.subnav-btn{
+
+    background:#1e293b;
+
+    border:1px solid #334155;
+
+    color:#e2e8f0;
+
+    padding:10px 16px;
+
+    border-radius:12px;
+
+    text-decoration:none;
+
+    font-size:14px;
+
+    font-weight:600;
+
+    transition:.2s;
+
+    cursor:pointer;
+}
+
+.subnav-btn:hover{
+
+    background:#2563eb;
+
+    border-color:#2563eb;
+
+    transform:translateY(-1px);
+}
+/* =========================================================
+MENU
+========================================================= */
+
+.menu{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:10px;
+
+    margin-top:30px;
+}
+
+.menu-grupo{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:6px;
+
+    margin-bottom:24px;
+}
+
+.menu-titulo{
+
+    font-size:11px;
+
+    font-weight:700;
+
+    letter-spacing:1px;
+
+    color:#64748b;
+
+    padding-left:14px;
+
+    margin-bottom:6px;
+}
+
+.menu-link{
+
+    display:flex;
+
+    align-items:center;
+
+    padding:14px 16px;
+
+    border-radius:14px;
+
+    color:#e2e8f0;
+
+    text-decoration:none;
+
+    font-weight:600;
+
+    transition:.2s;
+}
+
+.menu-link:hover{
+
+    background:#172554;
+}
+
+.menu-link.ativo{
+
+    background:#1d4ed8;
+}
+/* SCROLL SIDEBAR */
+
+.sidebar::-webkit-scrollbar{
+
+    width:6px;
+}
+
+.sidebar::-webkit-scrollbar-thumb{
+
+    background:#1e40af;
+
+    border-radius:20px;
+}
+.menu{
+
+    padding-bottom:120px;
+}
+/* ÁREA ROLÁVEL DO MENU */
+
+.menu{
+
+    flex:1;
+
+    overflow-y:auto;
+
+    padding-bottom:40px;
+
+    margin-top:30px;
+}
+
+/* FOOTER FIXO */
+
+.sidebar-footer{
+
+    padding-top:16px;
+
+    background:#020617;
+}
+/* =========================================================
+TOPBAR ACTIONS
+========================================================= */
+
+.acoes-topbar{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:10px;
+
+    margin-right:18px;
+}
+
+.topbar-btn{
+
+    background:#0f172a;
+
+    border:1px solid #334155;
+
+    color:#e2e8f0;
+
+    padding:10px 14px;
+
+    border-radius:12px;
+
+    font-size:14px;
+
+    font-weight:600;
+
+    text-decoration:none;
+
+    cursor:pointer;
+
+    transition:.2s;
+
+    display:flex;
+
+    align-items:center;
+}
+
+.topbar-btn:hover{
+
+    background:#1e293b;
+
+    transform:translateY(-1px);
 }
