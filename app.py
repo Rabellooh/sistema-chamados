@@ -31,6 +31,183 @@ app.config["MAIL_DEFAULT_SENDER"] = os.getenv("MAIL_DEFAULT_SENDER")
 
 mail = Mail(app)
 
+@app.context_processor
+def carregar_notificacoes():
+
+    usuario = session.get("usuario")
+
+    if not usuario:
+        return {}
+
+    notificacoes = db.session.execute(
+        text("""
+            SELECT
+                id,
+                titulo,
+                mensagem,
+                tipo,
+                link,
+                lida,
+                criada_em
+            FROM notificacoes
+            WHERE usuario_id = :usuario_id
+            ORDER BY criada_em DESC
+            LIMIT 5
+        """),
+        {
+            "usuario_id": usuario["id"]
+        }
+    ).fetchall()
+
+    total_notificacoes = db.session.execute(
+        text("""
+            SELECT COUNT(*)
+            FROM notificacoes
+            WHERE usuario_id = :usuario_id
+            AND lida = false
+        """),
+        {
+            "usuario_id": usuario["id"]
+        }
+    ).scalar()
+
+    return {
+        "notificacoes_topo": notificacoes,
+        "total_notificacoes": total_notificacoes
+    }
+
+
+def criar_notificacao(
+    usuario_id,
+    titulo,
+    mensagem,
+    tipo="sistema",
+    link="#"
+):
+
+    db.session.execute(
+        text("""
+            INSERT INTO notificacoes
+            (
+                usuario_id,
+                titulo,
+                mensagem,
+                tipo,
+                link
+            )
+            VALUES
+            (
+                :usuario_id,
+                :titulo,
+                :mensagem,
+                :tipo,
+                :link
+            )
+        """),
+        {
+            "usuario_id": usuario_id,
+            "titulo": titulo,
+            "mensagem": mensagem,
+            "tipo": tipo,
+            "link": link
+        }
+    )
+
+    db.session.commit()
+
+
+@app.route("/notificacao/<int:id>")
+def abrir_notificacao(id):
+
+    usuario = session.get("usuario")
+
+    if not usuario:
+        return redirect("/login")
+
+    db.session.execute(
+        text("""
+            UPDATE notificacoes
+            SET lida = true
+            WHERE id = :id
+            AND usuario_id = :usuario_id
+        """),
+        {
+            "id": id,
+            "usuario_id": usuario["id"]
+        }
+    )
+
+    db.session.commit()
+
+    return redirect(request.args.get("link", "/"))
+
+# =========================
+# EXCLUIR NOTIFICAÇÃO
+# =========================
+
+@app.route("/excluir_notificacao/<int:id>")
+def excluir_notificacao(id):
+
+    usuario = session.get("usuario")
+
+    if not usuario:
+        return redirect("/login")
+
+    db.session.execute(
+
+        db.text("""
+
+            DELETE FROM notificacoes
+
+            WHERE id = :id
+            AND usuario_id = :usuario_id
+
+        """),
+
+        {
+            "id": id,
+            "usuario_id": usuario["id"]
+        }
+
+    )
+
+    db.session.commit()
+
+    return redirect(request.referrer or "/")
+
+
+# =========================
+# LIMPAR NOTIFICAÇÕES
+# =========================
+
+@app.route("/limpar_notificacoes")
+def limpar_notificacoes():
+
+    usuario = session.get("usuario")
+
+    if not usuario:
+        return redirect("/login")
+
+    db.session.execute(
+
+        db.text("""
+
+            DELETE FROM notificacoes
+
+            WHERE usuario_id = :usuario_id
+
+        """),
+
+        {
+            "usuario_id": usuario["id"]
+        }
+
+    )
+
+    db.session.commit()
+
+    return redirect(request.referrer or "/")
+
 # =========================
 # ENVIO EMAIL
 # =========================
@@ -719,6 +896,61 @@ def novo_chamado():
 
         )
 
+        chamado_criado = db.session.execute(
+
+            db.text("""
+
+                SELECT id
+
+                FROM chamados
+
+                WHERE usuario = :usuario
+
+                ORDER BY id DESC
+
+                LIMIT 1
+
+            """),
+
+            {
+                "usuario": usuario["nome"]
+            }
+
+        ).fetchone()
+
+        if chamado_criado:
+
+            tecnicos = db.session.execute(
+
+                db.text("""
+
+                    SELECT id
+
+                    FROM usuarios
+
+                    WHERE tipo IN ('ti', 'administracao')
+                    AND ativo = true
+
+                """)
+
+            ).fetchall()
+
+            for tecnico in tecnicos:
+
+                criar_notificacao(
+
+                    usuario_id=tecnico.id,
+
+                    titulo="Novo chamado aberto",
+
+                    mensagem=f"{usuario['nome']} abriu o chamado #{chamado_criado.id}.",
+
+                    tipo="chamado",
+
+                    link=f"/chamado/{chamado_criado.id}"
+
+                )
+
         db.session.commit()
 
         return redirect("/chamados")
@@ -816,12 +1048,115 @@ def enviar_mensagem(chamado_id):
 
     )
 
+    chamado = db.session.execute(
+
+        db.text("""
+
+            SELECT *
+
+            FROM chamados
+
+            WHERE id = :id
+
+        """),
+
+        {
+            "id": chamado_id
+        }
+
+    ).fetchone()
+
+    if chamado:
+
+        # =========================
+        # SE COLABORADOR ENVIOU
+        # NOTIFICA TODOS OS TIs
+        # =========================
+
+        if usuario["tipo"] not in [
+            "ti",
+            "administracao"
+        ]:
+
+            tecnicos = db.session.execute(
+
+                db.text("""
+
+                    SELECT id
+
+                    FROM usuarios
+
+                    WHERE tipo IN ('ti', 'administracao')
+                    AND ativo = true
+
+                """)
+
+            ).fetchall()
+
+            for tecnico in tecnicos:
+
+                criar_notificacao(
+
+                    usuario_id=tecnico.id,
+
+                    titulo="Nova mensagem em chamado",
+
+                    mensagem=f"{usuario['nome']} enviou uma mensagem no chamado #{chamado_id}.",
+
+                    tipo="mensagem",
+
+                    link=f"/chamado/{chamado_id}"
+
+                )
+
+        # =========================
+        # SE TI / ADMIN ENVIOU
+        # NOTIFICA O DONO DO CHAMADO
+        # =========================
+
+        else:
+
+            dono_chamado = db.session.execute(
+
+                db.text("""
+
+                    SELECT id
+
+                    FROM usuarios
+
+                    WHERE LOWER(nome) = LOWER(:nome)
+
+                    LIMIT 1
+
+                """),
+
+                {
+                    "nome": chamado.usuario
+                }
+
+            ).fetchone()
+
+            if dono_chamado:
+
+                criar_notificacao(
+
+                    usuario_id=dono_chamado.id,
+
+                    titulo="Nova resposta no seu chamado",
+
+                    mensagem=f"{usuario['nome']} respondeu o chamado #{chamado_id}.",
+
+                    tipo="mensagem",
+
+                    link=f"/chamado/{chamado_id}"
+
+                )
+
     db.session.commit()
 
     return redirect(
         f"/chamado/{chamado_id}"
     )
-
 # =========================
 # CATEGORIA
 # =========================
@@ -1024,7 +1359,7 @@ def assumir_chamado(chamado_id):
 
         db.text("""
 
-            SELECT email
+            SELECT id, email
 
             FROM usuarios
 
@@ -1043,6 +1378,24 @@ def assumir_chamado(chamado_id):
     if usuario_chamado:
 
         email_usuario = usuario_chamado.email
+
+        # =========================
+        # NOTIFICAÇÃO
+        # =========================
+
+        criar_notificacao(
+
+            usuario_id=usuario_chamado.id,
+
+            titulo="Chamado assumido",
+
+            mensagem=f"{usuario['nome']} assumiu seu chamado #{chamado.id}.",
+
+            tipo="chamado",
+
+            link=f"/chamado/{chamado.id}"
+
+        )
 
     if email_usuario:
 
@@ -1200,6 +1553,33 @@ def finalizar(id):
     if usuario["tipo"] != "ti":
         return redirect("/")
 
+    chamado = db.session.execute(
+
+        db.text("""
+
+            SELECT *
+
+            FROM chamados
+
+            WHERE id = :id
+
+        """),
+
+        {
+            "id": id
+        }
+
+    ).fetchone()
+
+    if not chamado:
+
+        flash(
+            "Chamado não encontrado.",
+            "error"
+        )
+
+        return redirect("/chamados")
+
     db.session.execute(
 
         db.text("""
@@ -1218,7 +1598,48 @@ def finalizar(id):
 
     )
 
+    usuario_chamado = db.session.execute(
+
+        db.text("""
+
+            SELECT id
+
+            FROM usuarios
+
+            WHERE LOWER(nome) = LOWER(:nome)
+
+            LIMIT 1
+
+        """),
+
+        {
+            "nome": chamado.usuario
+        }
+
+    ).fetchone()
+
+    if usuario_chamado:
+
+        criar_notificacao(
+
+            usuario_id=usuario_chamado.id,
+
+            titulo="Chamado finalizado",
+
+            mensagem=f"{usuario['nome']} finalizou seu chamado #{id}.",
+
+            tipo="chamado",
+
+            link=f"/chamado/{id}"
+
+        )
+
     db.session.commit()
+
+    flash(
+        "Chamado finalizado com sucesso!",
+        "success"
+    )
 
     return redirect("/chamados")
 
@@ -1231,6 +1652,11 @@ def finalizar(id):
     methods=["GET", "POST"]
 )
 def excluir_chamado(chamado_id):
+
+    usuario = session.get("usuario")
+
+    if not usuario:
+        return redirect("/login")
 
     chamado = db.session.execute(text("""
 
@@ -1247,9 +1673,102 @@ def excluir_chamado(chamado_id):
 
     if request.method == "POST":
 
+        tecnicos_vinculados = db.session.execute(text("""
+
+            SELECT tecnico
+            FROM chamados_tecnicos
+            WHERE chamado_id = :id
+
+        """), {
+            "id": chamado_id
+        }).fetchall()
+
+        usuario_dono = db.session.execute(text("""
+
+            SELECT id
+            FROM usuarios
+            WHERE LOWER(nome) = LOWER(:nome)
+            LIMIT 1
+
+        """), {
+            "nome": chamado.usuario
+        }).fetchone()
+
+        if usuario_dono:
+
+            criar_notificacao(
+
+                usuario_id=usuario_dono.id,
+
+                titulo="Chamado excluído",
+
+                mensagem=f"O chamado #{chamado_id} foi excluído por {usuario['nome']}.",
+
+                tipo="chamado",
+
+                link="/chamados"
+
+            )
+
+        for tecnico in tecnicos_vinculados:
+
+            tecnico_db = db.session.execute(text("""
+
+                SELECT id
+                FROM usuarios
+                WHERE LOWER(nome) = LOWER(:nome)
+                LIMIT 1
+
+            """), {
+                "nome": tecnico.tecnico
+            }).fetchone()
+
+            if tecnico_db:
+
+                criar_notificacao(
+
+                    usuario_id=tecnico_db.id,
+
+                    titulo="Chamado excluído",
+
+                    mensagem=f"O chamado #{chamado_id}, vinculado a você, foi excluído por {usuario['nome']}.",
+
+                    tipo="chamado",
+
+                    link="/chamados"
+
+                )
+
+        # REMOVE MENSAGENS RELACIONADAS
+
+        db.session.execute(text("""
+
+            DELETE FROM mensagens
+
+            WHERE chamado_id = :id
+
+        """), {
+            "id": chamado_id
+        })
+
+        # REMOVE TÉCNICOS RELACIONADOS
+
+        db.session.execute(text("""
+
+            DELETE FROM chamados_tecnicos
+
+            WHERE chamado_id = :id
+
+        """), {
+            "id": chamado_id
+        })
+
+        # REMOVE CHAMADO
+
         db.session.execute(text("""
 
             DELETE FROM chamados
+
             WHERE id = :id
 
         """), {
@@ -1258,11 +1777,21 @@ def excluir_chamado(chamado_id):
 
         db.session.commit()
 
+        flash(
+            "Chamado excluído com sucesso!",
+            "success"
+        )
+
         return redirect("/chamados")
 
     return render_template(
+
         "confirmar_exclusao.html",
+
+        usuario=usuario,
+
         chamado=chamado
+
     )
 # =========================
 # HISTÓRICO
@@ -4141,6 +4670,50 @@ def nova_tarefa():
 
     )
 
+    # =========================
+    # NOTIFICAÇÃO
+    # =========================
+
+    responsavel_nome = request.form.get("responsavel")
+
+    if responsavel_nome:
+
+        responsavel_db = db.session.execute(
+
+            db.text("""
+
+                SELECT id
+
+                FROM usuarios
+
+                WHERE LOWER(nome) = LOWER(:nome)
+
+                LIMIT 1
+
+            """),
+
+            {
+                "nome": responsavel_nome
+            }
+
+        ).fetchone()
+
+        if responsavel_db:
+
+            criar_notificacao(
+
+                usuario_id=responsavel_db.id,
+
+                titulo="Nova tarefa atribuída",
+
+                mensagem=f"Você recebeu a tarefa: {request.form.get('titulo')}",
+
+                tipo="kanban",
+
+                link="/tarefas"
+
+            )
+
     db.session.commit()
 
     flash(
@@ -4149,8 +4722,6 @@ def nova_tarefa():
     )
 
     return redirect("/tarefas")
-
-
 # =========================
 # ALTERAR STATUS
 # =========================
@@ -4305,6 +4876,46 @@ def editar_tarefa(id):
 
         )
 
+        responsavel_db = None
+
+        if dados["responsavel"]:
+
+            responsavel_db = db.session.execute(
+
+                db.text("""
+
+                    SELECT id
+
+                    FROM usuarios
+
+                    WHERE LOWER(nome) = LOWER(:nome)
+
+                    LIMIT 1
+
+                """),
+
+                {
+                    "nome": dados["responsavel"]
+                }
+
+            ).fetchone()
+
+        if responsavel_db:
+
+            criar_notificacao(
+
+                usuario_id=responsavel_db.id,
+
+                titulo="Tarefa atualizada",
+
+                mensagem=f"A tarefa '{dados['titulo']}' foi atualizada por {usuario['nome']}.",
+
+                tipo="kanban",
+
+                link="/tarefas"
+
+            )
+
         db.session.commit()
 
         flash(
@@ -4324,7 +4935,6 @@ def editar_tarefa(id):
 
     )
 
-
 # =========================
 # EXCLUIR TAREFA
 # =========================
@@ -4339,6 +4949,73 @@ def excluir_tarefa(id):
 
     if usuario["tipo"] != "ti":
         return redirect("/")
+
+    tarefa = db.session.execute(
+
+        db.text("""
+
+            SELECT *
+
+            FROM tarefas
+
+            WHERE id = :id
+
+        """),
+
+        {
+            "id": id
+        }
+
+    ).fetchone()
+
+    if not tarefa:
+
+        flash(
+            "Tarefa não encontrada.",
+            "error"
+        )
+
+        return redirect("/tarefas")
+
+    responsavel_db = None
+
+    if tarefa.responsavel:
+
+        responsavel_db = db.session.execute(
+
+            db.text("""
+
+                SELECT id
+
+                FROM usuarios
+
+                WHERE LOWER(nome) = LOWER(:nome)
+
+                LIMIT 1
+
+            """),
+
+            {
+                "nome": tarefa.responsavel
+            }
+
+        ).fetchone()
+
+    if responsavel_db:
+
+        criar_notificacao(
+
+            usuario_id=responsavel_db.id,
+
+            titulo="Tarefa excluída",
+
+            mensagem=f"A tarefa '{tarefa.titulo}' foi excluída por {usuario['nome']}.",
+
+            tipo="kanban",
+
+            link="/tarefas"
+
+        )
 
     db.session.execute(
 

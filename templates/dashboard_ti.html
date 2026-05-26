@@ -2,19 +2,25 @@
 
 {% block content %}
 
-<h1 class="titulo">
-    Dashboard TI
-</h1>
+<div class="dashboard-header">
 
-<div
-    style="
-        display:flex;
-        gap:10px;
-        flex-wrap:wrap;
-        margin-bottom:20px;
-    "
-    
->
+    <div class="dashboard-info">
+
+        <h1 class="titulo-dashboard">
+            Dashboard TI
+        </h1>
+
+        <p class="subtitulo-dashboard">
+            Central operacional do ambiente corporativo
+        </p>
+
+    </div>
+
+</div>
+
+<!-- AÇÕES -->
+
+<div class="dashboard-actions">
 
     <a href="/historico" class="btn-primary">
         Histórico
@@ -48,94 +54,143 @@
 
 </div>
 
+<!-- CARDS PRINCIPAIS -->
 
-<!-- CARDS -->
+<div class="stats-grid">
 
-<div class="grid">
+    <div class="stat-card stat-danger">
 
-    <div class="card stat">
+        <div class="stat-topo">
 
-        <span>
-            Chamados Abertos
-        </span>
+            <span>
+                Chamados Abertos
+            </span>
 
-        <h1 class="txt-aberto">
+            <div class="stat-icon">
+                🎫
+            </div>
+
+        </div>
+
+        <div class="stat-numero">
             {{ abertos }}
-        </h1>
+        </div>
 
     </div>
 
-    <div class="card stat">
+    <div class="stat-card stat-warning">
 
-        <span>
-            Em Andamento
-        </span>
+        <div class="stat-topo">
 
-        <h1 class="txt-andamento">
+            <span>
+                Em andamento
+            </span>
+
+            <div class="stat-icon">
+                🔧
+            </div>
+
+        </div>
+
+        <div class="stat-numero">
             {{ andamento }}
-        </h1>
+        </div>
 
     </div>
 
-    <div class="card stat">
+    <div class="stat-card stat-success">
 
-        <span>
-            Resolvidos
-        </span>
+        <div class="stat-topo">
 
-        <h1 class="txt-resolvido">
+            <span>
+                Resolvidos
+            </span>
+
+            <div class="stat-icon">
+                ✅
+            </div>
+
+        </div>
+
+        <div class="stat-numero">
             {{ resolvidos }}
-        </h1>
+        </div>
 
     </div>
 
 </div>
+
 <!-- RESUMO KANBAN -->
 
-<div class="grid">
+<div class="stats-grid">
 
-    <div class="card stat">
+    <div class="stat-card stat-neutral">
 
-        <span>
-            Tarefas Pendentes
-        </span>
+        <div class="stat-topo">
 
-        <h1>
+            <span>
+                Tarefas Pendentes
+            </span>
+
+            <div class="stat-icon">
+                📋
+            </div>
+
+        </div>
+
+        <div class="stat-numero">
             {{ tarefas_pendentes }}
-        </h1>
+        </div>
 
     </div>
 
-    <div class="card stat">
+    <div class="stat-card stat-warning">
 
-        <span>
-            Em andamento
-        </span>
+        <div class="stat-topo">
 
-        <h1 class="txt-andamento">
+            <span>
+                Tarefas em andamento
+            </span>
+
+            <div class="stat-icon">
+                ⚙️
+            </div>
+
+        </div>
+
+        <div class="stat-numero">
             {{ tarefas_andamento }}
-        </h1>
+        </div>
 
     </div>
 
-    <div class="card stat">
+    <div class="stat-card stat-warning">
 
-        <span>
-            Aguardando
-        </span>
+        <div class="stat-topo">
 
-        <h1 class="txt-warning">
+            <span>
+                Aguardando
+            </span>
+
+            <div class="stat-icon">
+                ⏳
+            </div>
+
+        </div>
+
+        <div class="stat-numero">
             {{ tarefas_aguardando }}
-        </h1>
+        </div>
 
     </div>
 
 </div>
+
 <!-- MAPAS -->
 
 <div class="card card-mapas-dashboard">
 
-    <div class="mapas-header">
+    <div class="card-header-dashboard">
 
         <h2>
             Mapas Operacionais
@@ -145,10 +200,7 @@
 
     <div class="cards-mapas">
 
-        <a
-            href="/mapa_hunter"
-            class="card-mapa"
-        >
+        <a href="/mapa_hunter" class="card-mapa">
 
             <h3>
                 Hunter
@@ -160,10 +212,7 @@
 
         </a>
 
-        <a
-            href="/mapa_bl"
-            class="card-mapa"
-        >
+        <a href="/mapa_bl" class="card-mapa">
 
             <h3>
                 BL
@@ -178,11 +227,10 @@
     </div>
 
 </div>
+
 <!-- OPERAÇÕES TI -->
 
-<div class="grid">
-
-    <!-- TAREFAS CRÍTICAS -->
+<div class="stats-grid">
 
     <div class="card">
 
@@ -192,10 +240,7 @@
                 Tarefas Críticas
             </h2>
 
-            <a
-                href="/tarefas"
-                class="btn-mini"
-            >
+            <a href="/tarefas" class="btn-mini">
                 Abrir Kanban
             </a>
 
@@ -237,33 +282,46 @@
 
     </div>
 
-    <!-- MÁQUINAS COM PROBLEMA -->
-
     <div class="card">
 
-        <h2 style="margin-bottom:20px;">
-            Máquinas com chamados
-        </h2>
+        <div class="card-header-dashboard">
 
-        {% for m in maquinas_problema %}
-
-        <div class="item-dashboard">
-
-            <span>
-                {{ m.maquina }}
-            </span>
-
-            <span class="badge aberto">
-                problema
-            </span>
+            <h2>
+                Máquinas com chamados
+            </h2>
 
         </div>
 
-        {% endfor %}
+        {% if maquinas_problema %}
+
+            {% for m in maquinas_problema %}
+
+            <div class="item-dashboard">
+
+                <span>
+                    {{ m.maquina }}
+                </span>
+
+                <span class="badge aberto">
+                    problema
+                </span>
+
+            </div>
+
+            {% endfor %}
+
+        {% else %}
+
+            <p class="texto-secundario">
+                Nenhuma máquina com chamado aberto.
+            </p>
+
+        {% endif %}
 
     </div>
 
 </div>
+
 <!-- ÚLTIMAS MOVIMENTAÇÕES -->
 
 <div class="card">
@@ -274,62 +332,67 @@
             Últimas movimentações
         </h2>
 
-        <a
-            href="/historico_mapa"
-            class="btn-mini"
-        >
+        <a href="/historico_mapa" class="btn-mini">
             Ver histórico
         </a>
 
     </div>
 
-    {% for mov in movimentacoes %}
+    {% if movimentacoes %}
 
-    <div class="item-dashboard">
+        {% for mov in movimentacoes %}
 
-        <div>
+        <div class="item-dashboard">
 
-            <strong>
-                {{ mov.maquina }}
-            </strong>
+            <div>
 
-            <p>
-                {{ mov.origem }}
-                →
-                {{ mov.destino }}
-            </p>
+                <strong>
+                    {{ mov.maquina }}
+                </strong>
+
+                <p>
+                    {{ mov.origem }}
+                    →
+                    {{ mov.destino }}
+                </p>
+
+            </div>
+
+            <span>
+                {{ mov.usuario_responsavel }}
+            </span>
 
         </div>
 
-        <span>
-            {{ mov.usuario_responsavel }}
-        </span>
+        {% endfor %}
 
-    </div>
+    {% else %}
 
-    {% endfor %}
+        <p class="texto-secundario">
+            Nenhuma movimentação registrada.
+        </p>
+
+    {% endif %}
 
 </div>
 
 <!-- RANKINGS -->
 
-<div class="grid">
+<div class="stats-grid">
 
     <div class="card">
 
-        <h2 style="margin-bottom:15px;">
-            Colaboradores que mais chamam
-        </h2>
+        <div class="card-header-dashboard">
+
+            <h2>
+                Colaboradores que mais chamam
+            </h2>
+
+        </div>
 
         {% for nome, total in ranking_colaborador.items() %}
 
-        <div
-            style="
-                display:flex;
-                justify-content:space-between;
-                margin-bottom:10px;
-            "
-        >
+        <div class="item-dashboard">
 
             <span>
                 {{ nome }}
@@ -347,19 +410,17 @@
 
     <div class="card">
 
-        <h2 style="margin-bottom:15px;">
-            Setores mais frequentes
-        </h2>
+        <div class="card-header-dashboard">
+
+            <h2>
+                Setores mais frequentes
+            </h2>
+
+        </div>
 
         {% for nome, total in ranking_setor.items() %}
 
-        <div
-            style="
-                display:flex;
-                justify-content:space-between;
-                margin-bottom:10px;
-            "
-        >
+        <div class="item-dashboard">
 
             <span>
                 {{ nome }}
@@ -377,16 +438,19 @@
 
 </div>
 
-
 <!-- GRÁFICOS -->
 
-<div class="grid">
+<div class="stats-grid">
 
     <div class="card">
 
-        <h2 style="margin-bottom:20px;">
-            Problemas Frequentes
-        </h2>
+        <div class="card-header-dashboard">
+
+            <h2>
+                Problemas Frequentes
+            </h2>
+
+        </div>
 
         <canvas id="graficoProblemas"></canvas>
 
@@ -394,9 +458,13 @@
 
     <div class="card">
 
-        <h2 style="margin-bottom:20px;">
-            Setores
-        </h2>
+        <div class="card-header-dashboard">
+
+            <h2>
+                Setores
+            </h2>
+
+        </div>
 
         <canvas id="graficoSetores"></canvas>
 
@@ -404,133 +472,128 @@
 
 </div>
 
-
 <!-- ÚLTIMOS CHAMADOS -->
 
 <div class="card">
 
-    <h2 style="margin-bottom:20px;">
-        Últimos Chamados
-    </h2>
+    <div class="card-header-dashboard">
 
-    <table>
+        <h2>
+            Últimos Chamados
+        </h2>
 
-        <thead>
+        <a href="/chamados" class="btn-mini">
+            Ver todos
+        </a>
 
-            <tr>
+    </div>
 
-                <th>ID</th>
-                <th>Colaborador</th>
-                <th>Setor</th>
-                <th>Status</th>
-                <th>Técnicos</th>
-                <th>Ações</th>
+    <div class="tabela-container">
 
-            </tr>
+        <table>
 
-        </thead>
+            <thead>
 
-        <tbody>
+                <tr>
 
-        {% for c in chamados|reverse %}
+                    <th>ID</th>
+                    <th>Colaborador</th>
+                    <th>Setor</th>
+                    <th>Status</th>
+                    <th>Técnicos</th>
+                    <th>Ações</th>
 
-            <tr>
+                </tr>
 
-                <td>
-                    #{{ c.id }}
-                </td>
+            </thead>
 
-                <td>
-                    {{ c.usuario }}
-                </td>
+            <tbody>
 
-                <td>
-                    {{ c.setor }}
-                </td>
+            {% for c in chamados|reverse %}
 
-                <td>
+                <tr>
 
-                    {% if c.status == "aberto" %}
+                    <td>
+                        #{{ c.id }}
+                    </td>
 
-                    <span class="badge aberto">
-                        Aberto
-                    </span>
+                    <td>
+                        {{ c.usuario }}
+                    </td>
 
-                    {% elif c.status == "em_andamento" %}
+                    <td>
+                        {{ c.setor }}
+                    </td>
 
-                    <span class="badge andamento">
-                        Em andamento
-                    </span>
+                    <td>
 
-                    {% else %}
+                        {% if c.status == "aberto" %}
 
-                    <span class="badge resolvido">
-                        Resolvido
-                    </span>
+                        <span class="badge aberto">
+                            Aberto
+                        </span>
 
-                    {% endif %}
+                        {% elif c.status == "em_andamento" %}
 
-                </td>
+                        <span class="badge andamento">
+                            Em andamento
+                        </span>
 
-                <td>
+                        {% else %}
 
-                    {% if c.tecnicos %}
+                        <span class="badge resolvido">
+                            Resolvido
+                        </span>
 
-                        {{ c.tecnicos | join(", ") }}
+                        {% endif %}
 
-                    {% else %}
+                    </td>
 
-                        Nenhum
+                    <td>
 
-                    {% endif %}
+                        {% if c.tecnicos %}
 
-                </td>
+                            {{ c.tecnicos | join(", ") }}
 
-                <td>
+                        {% else %}
 
-                    <div
-                        style="
-                            display:flex;
-                            gap:8px;
-                            flex-wrap:wrap;
-                        "
-                    >
+                            Nenhum
 
-                        <a
-                            href="/chamado/{{ c.id }}"
-                            class="btn-primary"
-                        >
-                            Detalhes
-                        </a>
+                        {% endif %}
 
-                        <a
-                            href="/assumir/{{ c.id }}"
-                            class="btn-warning"
-                        >
-                            Assumir
-                        </a>
+                    </td>
 
-                        <a
-                            href="/finalizar/{{ c.id }}"
-                            class="btn-success"
-                        >
-                            Finalizar
-                        </a>
+                    <td>
 
-                    </div>
+                        <div class="acoes-tabela">
 
-                </td>
+                            <a href="/chamado/{{ c.id }}" class="btn-primary">
+                                Detalhes
+                            </a>
 
-            </tr>
+                            <a href="/assumir/{{ c.id }}" class="btn-warning">
+                                Assumir
+                            </a>
 
-        {% endfor %}
+                            <a href="/finalizar/{{ c.id }}" class="btn-success">
+                                Finalizar
+                            </a>
 
-        </tbody>
+                        </div>
 
-    </table>
+                    </td>
+
+                </tr>
+
+            {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
 
 </div>
-
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
@@ -541,9 +604,6 @@ JSON.parse('{{ problemas_json | safe }}');
 
 const setores =
 JSON.parse('{{ setores_json | safe }}');
-
-
-// PROBLEMAS
 
 new Chart(
 
@@ -574,15 +634,29 @@ new Chart(
 
                 legend: {
 
-                    position: "bottom"
+                    position: "bottom",
+
+                    labels: {
+
+                        color: "#cbd5e1",
+
+                        padding: 18,
+
+                        font: {
+                            size: 12
+                        }
+
+                    }
+
                 }
+
             }
+
         }
+
     }
+
 );
-
-
-// SETORES
 
 new Chart(
 
@@ -612,12 +686,43 @@ new Chart(
             plugins: {
 
                 legend: {
-
                     display: false
                 }
+
+            },
+
+            scales: {
+
+                x: {
+
+                    ticks: {
+                        color: "#94a3b8"
+                    },
+
+                    grid: {
+                        color: "rgba(255,255,255,.04)"
+                    }
+
+                },
+
+                y: {
+
+                    ticks: {
+                        color: "#94a3b8"
+                    },
+
+                    grid: {
+                        color: "rgba(255,255,255,.04)"
+                    }
+
+                }
+
             }
+
         }
+
     }
+
 );
 
 </script>

@@ -22,13 +22,7 @@
 
         {% if usuario.tipo == "ti" %}
 
-        <div
-            style="
-                display:flex;
-                gap:10px;
-                flex-wrap:wrap;
-            "
-        >
+        <div class="usuarios-acoes-topo">
 
             <a
                 href="/novo_usuario"
@@ -38,70 +32,33 @@
             </a>
 
             <form
-    action="/importar_usuarios"
-    method="POST"
-    enctype="multipart/form-data"
-    style="
-        display:flex;
-        gap:10px;
-        align-items:center;
-        flex-wrap:wrap;
-    "
->
+                action="/importar_usuarios"
+                method="POST"
+                enctype="multipart/form-data"
+                class="form-importar"
+            >
 
-    <input
-        type="file"
-        name="arquivo"
-        accept=".xlsx,.xls"
-        required
-    >
+                <input
+                    type="file"
+                    name="arquivo"
+                    accept=".xlsx,.xls"
+                    required
+                >
 
-    <form
-    action="/importar_usuarios"
-    method="POST"
-    enctype="multipart/form-data"
-    style="display:flex; gap:10px;"
->
+                <button
+                    type="submit"
+                    class="btn-success"
+                >
+                    Importar Planilha
+                </button>
 
-
-    <button
-        type="submit"
-        class="btn-success"
-    >
-        Importar Planilha
-    </button>
-
-</form>
-
-</form>
+            </form>
 
         </div>
 
         {% endif %}
 
     </div>
-
-
-    <!-- ALERTAS -->
-
-    {% with messages = get_flashed_messages(with_categories=true) %}
-
-        {% if messages %}
-
-            {% for categoria, mensagem in messages %}
-
-                <div class="alerta {{ categoria }}">
-
-                    {{ mensagem }}
-
-                </div>
-
-            {% endfor %}
-
-        {% endif %}
-
-    {% endwith %}
-
 
     <!-- BUSCA -->
 
@@ -142,251 +99,252 @@
 
     </div>
 
-
     <!-- RESUMO -->
 
-    <div class="grid">
+    <div class="stats-grid">
 
-        <div class="card stat">
+        <div class="stat-card stat-neutral">
 
-            <span>
-                Total de Usuários
-            </span>
+            <div class="stat-topo">
 
-            <h1>
+                <span>
+                    Total de Usuários
+                </span>
+
+                <div class="stat-icon">
+                    👥
+                </div>
+
+            </div>
+
+            <div class="stat-numero">
                 {{ usuarios|length }}
-            </h1>
+            </div>
 
         </div>
 
-        <div class="card stat">
+        <div class="stat-card stat-success">
 
-            <span>
-                Usuários Ativos
-            </span>
+            <div class="stat-topo">
 
-            <h1 class="txt-resolvido">
+                <span>
+                    Usuários Ativos
+                </span>
+
+                <div class="stat-icon">
+                    ✅
+                </div>
+
+            </div>
+
+            <div class="stat-numero">
 
                 {{
-
                     usuarios
                     | selectattr("ativo")
                     | list
                     | length
-
                 }}
 
-            </h1>
+            </div>
 
         </div>
 
-        <div class="card stat">
+        <div class="stat-card stat-danger">
 
-            <span>
-                Usuários Inativos
-            </span>
+            <div class="stat-topo">
 
-            <h1 class="txt-aberto">
+                <span>
+                    Usuários Inativos
+                </span>
+
+                <div class="stat-icon">
+                    🚫
+                </div>
+
+            </div>
+
+            <div class="stat-numero">
 
                 {{
-
                     usuarios
                     | rejectattr("ativo")
                     | list
                     | length
-
                 }}
 
-            </h1>
+            </div>
 
         </div>
 
     </div>
 
+    <!-- LISTA DE USUÁRIOS -->
 
-    <!-- TABELA -->
+    {% if usuarios %}
 
-    <div class="card tabela-container">
+    <div class="usuarios-grid">
 
-        <table class="tabela-usuarios">
+        {% for u in usuarios %}
 
-            <thead>
+        <div class="usuario-card">
 
-                <tr>
+            <div class="usuario-card-topo">
 
-                    <th>Matrícula</th>
-                    <th>Nome</th>
-                    <th>Tipo</th>
-                    <th>Setor</th>
-                    <th>E-mail</th>
-                    <th>Status</th>
+                <div class="usuario-identidade">
 
-                    {% if usuario.tipo == "ti" %}
-                    <th width="220">
-                        Ações
-                    </th>
-                    {% endif %}
+                    <div class="usuario-avatar">
 
-                </tr>
+                        {{ u.nome[0] }}
 
-            </thead>
+                    </div>
 
-            <tbody>
+                    <div>
 
-                {% if usuarios %}
+                        <h3>
+                            {{ u.nome }}
+                        </h3>
 
-                    {% for u in usuarios %}
+                        <span>
+                            Matrícula #{{ u.id }}
+                        </span>
 
-                    <tr>
+                    </div>
 
-                        <td>
+                </div>
 
-                            <strong>
-                                #{{ u.id }}
-                            </strong>
+                {% if u.ativo %}
 
-                        </td>
-
-                        <td>
-
-                            <div
-                                style="
-                                    display:flex;
-                                    flex-direction:column;
-                                    gap:4px;
-                                "
-                            >
-
-                                <strong>
-                                    {{ u.nome }}
-                                </strong>
-
-                            </div>
-
-                        </td>
-
-                        <td>
-
-                            {% if u.tipo == "ti" %}
-
-                                <span class="badge andamento">
-                                    TI
-                                </span>
-
-                            {% elif u.tipo == "administracao" %}
-
-                                <span class="badge aberto">
-                                    Administração
-                                </span>
-
-                            {% else %}
-
-                                <span class="badge resolvido">
-                                    Colaborador
-                                </span>
-
-                            {% endif %}
-
-                        </td>
-
-                        <td>
-                            {{ u.setor or "-" }}
-                        </td>
-
-                        <td>
-                            {{ u.email or "-" }}
-                        </td>
-
-                        <td>
-
-                            {% if u.ativo %}
-
-                            <span class="badge ativo">
-                                Ativo
-                            </span>
-
-                            {% else %}
-
-                            <span class="badge inativo">
-                                Inativo
-                            </span>
-
-                            {% endif %}
-
-                        </td>
-
-                        {% if usuario.tipo == "ti" %}
-
-                        <td>
-
-                            <div class="acoes-tabela">
-
-                                <a
-                                    href="/editar_usuario/{{ u.id }}"
-                                    class="btn-warning"
-                                >
-                                    Editar
-                                </a>
-                                <a
-                                    href="/resetar_senha/{{ u.id }}"
-                                    class="btn-dark"
-                                    onclick="
-                                        return confirm(
-                                            'Resetar senha deste usuário para 123456?'
-                                        )
-                                    "
-                                >
-                                    Resetar Senha
-                                </a>
-
-                                <a
-                                    href="/excluir_usuario/{{ u.id }}"
-                                    class="btn-danger"
-                                    onclick="
-                                        return confirm(
-                                            'Deseja realmente excluir este usuário?'
-                                        )
-                                    "
-                                >
-                                    Excluir
-                                </a>
-
-                            </div>
-
-                        </td>
-
-                        {% endif %}
-
-                    </tr>
-
-                    {% endfor %}
+                <span class="badge ativo">
+                    Ativo
+                </span>
 
                 {% else %}
 
-                <tr>
-
-                    <td
-                        colspan="7"
-                        style="
-                            text-align:center;
-                            padding:40px;
-                            color:#94a3b8;
-                        "
-                    >
-
-                        Nenhum usuário encontrado.
-
-                    </td>
-
-                </tr>
+                <span class="badge inativo">
+                    Inativo
+                </span>
 
                 {% endif %}
 
-            </tbody>
+            </div>
 
-        </table>
+            <div class="usuario-info">
+
+                <div>
+
+                    <span>
+                        Tipo
+                    </span>
+
+                    {% if u.tipo == "ti" %}
+
+                    <strong class="tipo-ti">
+                        TI
+                    </strong>
+
+                    {% elif u.tipo == "administracao" %}
+
+                    <strong class="tipo-admin">
+                        Administração
+                    </strong>
+
+                    {% else %}
+
+                    <strong class="tipo-colab">
+                        Colaborador
+                    </strong>
+
+                    {% endif %}
+
+                </div>
+
+                <div>
+
+                    <span>
+                        Setor
+                    </span>
+
+                    <strong>
+                        {{ u.setor or "-" }}
+                    </strong>
+
+                </div>
+
+                <div class="usuario-email">
+
+                    <span>
+                        E-mail
+                    </span>
+
+                    <strong>
+                        {{ u.email or "-" }}
+                    </strong>
+
+                </div>
+
+            </div>
+
+            {% if usuario.tipo == "ti" %}
+
+            <div class="usuario-card-acoes">
+
+                <a
+                    href="/editar_usuario/{{ u.id }}"
+                    class="btn-warning"
+                >
+                    Editar
+                </a>
+
+                <a
+                    href="/resetar_senha/{{ u.id }}"
+                    class="btn-dark"
+                    onclick="
+                        return confirm(
+                            'Resetar senha deste usuário para 123456?'
+                        )
+                    "
+                >
+                    Resetar
+                </a>
+
+                <a
+                    href="/excluir_usuario/{{ u.id }}"
+                    class="btn-danger"
+                    onclick="
+                        return confirm(
+                            'Deseja realmente excluir este usuário?'
+                        )
+                    "
+                >
+                    Excluir
+                </a>
+
+            </div>
+
+            {% endif %}
+
+        </div>
+
+        {% endfor %}
 
     </div>
+
+    {% else %}
+
+    <div class="card vazio-card">
+
+        <h2>
+            Nenhum usuário encontrado
+        </h2>
+
+        <p>
+            Tente ajustar sua busca ou cadastrar um novo usuário.
+        </p>
+
+    </div>
+
+    {% endif %}
 
 </div>
 

@@ -12,13 +12,24 @@
     >
 
     <title>
-        Sistema de Chamados
+        Vyron ITSM
     </title>
 
-    <link
-        rel="stylesheet"
-        href="{{ url_for('static', filename='style.css') }}"
-    >
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/variables.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/layout.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/sidebar.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/cards.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/buttons.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/forms.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/tables.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/animations.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/responsive.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/inventario.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/kanban.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/usuarios.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/mapas.css') }}">
 
     <link
         rel="preconnect"
@@ -32,11 +43,38 @@
     >
 
     <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
         rel="stylesheet"
     >
 
 </head>
+<script>
+
+function toggleNotificacoes(){
+
+    const dropdown =
+        document.getElementById("notificacaoDropdown");
+
+    dropdown.classList.toggle("ativo");
+
+}
+
+document.addEventListener("click", function(event){
+
+    const wrapper =
+        document.querySelector(".notificacao-wrapper");
+
+    if(wrapper && !wrapper.contains(event.target)){
+
+        document
+        .getElementById("notificacaoDropdown")
+        .classList.remove("ativo");
+
+    }
+
+});
+
+</script>
 
 <body>
 
@@ -48,35 +86,23 @@
 
         <aside class="sidebar">
 
-            <div class="sidebar-topo">
+            <div class="brand-card">
 
-                <div class="logo-box">
-
-                    <div class="logo-icon">
-                        H
-                    </div>
-
-                    <div>
-
-                        <h2 class="logo-texto">
-                            HelpDesk
-                        </h2>
-
-                        <span class="logo-sub">
-                            Sistema Interno
-                        </span>
-
-                    </div>
-
+                <div class="vyron-mark">
+                    <span>V</span>
                 </div>
+
+                <h1>
+                    VYRON
+                </h1>
+
+                <p>
+                    ITSM Simplificado
+                </p>
 
             </div>
 
-            <!-- MENU -->
-
             <nav class="menu">
-
-                <!-- OPERACIONAL -->
 
                 <div class="menu-grupo">
 
@@ -85,24 +111,25 @@
                     </span>
 
                     <a href="/" class="menu-link">
+                        <span class="menu-icone">▦</span>
                         Dashboard
                     </a>
 
                     <a href="/chamados" class="menu-link">
+                        <span class="menu-icone">☏</span>
                         Chamados
                     </a>
 
                     {% if usuario.tipo == "ti" %}
 
                     <a href="/tarefas" class="menu-link">
+                        <span class="menu-icone">☑</span>
                         Tarefas TI
                     </a>
 
                     {% endif %}
 
                 </div>
-
-                <!-- GESTÃO -->
 
                 {% if usuario.tipo in ["ti", "administracao"] %}
 
@@ -113,17 +140,20 @@
                     </span>
 
                     <a href="/inventario" class="menu-link">
+                        <span class="menu-icone">▣</span>
                         Inventário
                     </a>
 
                     {% if usuario.tipo == "ti" %}
 
                     <a href="/usuarios" class="menu-link">
+                        <span class="menu-icone">♙</span>
                         Usuários
                     </a>
 
                     <a href="/historico" class="menu-link">
-                        Histórico
+                        <span class="menu-icone">▤</span>
+                        Relatórios
                     </a>
 
                     {% endif %}
@@ -131,8 +161,6 @@
                 </div>
 
                 {% endif %}
-
-                <!-- MAPAS -->
 
                 {% if usuario.tipo in ["ti", "administracao"] %}
 
@@ -143,10 +171,12 @@
                     </span>
 
                     <a href="/mapa_hunter" class="menu-link">
+                        <span class="menu-icone">⌖</span>
                         Mapa Hunter
                     </a>
 
                     <a href="/mapa_bl" class="menu-link">
+                        <span class="menu-icone">⌬</span>
                         Mapa BL
                     </a>
 
@@ -155,8 +185,6 @@
                 {% endif %}
 
             </nav>
-
-            <!-- FOOTER -->
 
             <div class="sidebar-footer">
 
@@ -175,14 +203,12 @@
 
         <main class="conteudo">
 
-            <!-- HEADER -->
-
             <header class="topbar">
 
                 <div class="topbar-esquerda">
 
                     <h3>
-                        Sistema de Chamados
+                        • Sistema Interno TC TELECOM
                     </h3>
 
                     <span>
@@ -192,8 +218,6 @@
                 </div>
 
                 <div class="topbar-direita">
-
-                    <!-- AÇÕES -->
 
                     <div class="acoes-topbar">
 
@@ -220,8 +244,6 @@
 
                     </div>
 
-                    <!-- USUÁRIO -->
-
                     <div class="usuario-box">
 
                         <div class="avatar-user">
@@ -237,18 +259,102 @@
                             </strong>
 
                             <small>
-                                {{ usuario.tipo }}
+                                {{ usuario.tipo }} • {{ usuario.setor or "Sem setor" }}
                             </small>
 
                         </div>
 
+                        <div class="notificacao-wrapper">
+
+                            <button
+                                type="button"
+                                class="notificacao-btn"
+                                onclick="toggleNotificacoes()"
+                            >
+                                🔔
+
+                                {% if total_notificacoes and total_notificacoes > 0 %}
+                                <span class="notificacao-badge">
+                                    {{ total_notificacoes }}
+                                </span>
+                                {% endif %}
+                            </button>
+
+                            <div
+                                class="notificacao-dropdown"
+                                id="notificacaoDropdown"
+                            >
+
+                                <div class="notificacao-header">
+
+                                    <strong>
+                                        Notificações
+                                    </strong>
+
+                                    {% if notificacoes_topo %}
+
+                                    <a
+                                        href="/limpar_notificacoes"
+                                        class="limpar-notificacoes"
+                                        onclick="return confirm('Apagar todas as notificações?')"
+                                    >
+                                        Limpar tudo
+                                    </a>
+
+                                    {% endif %}
+
+                                </div>
+
+                                {% if notificacoes_topo %}
+
+                                    {% for n in notificacoes_topo %}
+
+                                    <div class="notificacao-item-wrapper">
+
+                                        <a
+                                            href="/notificacao/{{ n.id }}?link={{ n.link }}"
+                                            class="notificacao-item {% if not n.lida %}nao-lida{% endif %}"
+                                        >
+
+                                            <strong>
+                                                {{ n.titulo }}
+                                            </strong>
+
+                                            <span>
+                                                {{ n.mensagem }}
+                                            </span>
+
+                                        </a>
+
+                                        <a
+                                            href="/excluir_notificacao/{{ n.id }}"
+                                            class="notificacao-excluir"
+                                            title="Excluir notificação"
+                                            onclick="event.stopPropagation(); return confirm('Excluir esta notificação?')"
+                                        >
+                                            ×
+                                        </a>
+
+                                    </div>
+
+                                    {% endfor %}
+
+                                {% else %}
+
+                                    <div class="notificacao-vazia">
+                                        Nenhuma notificação.
+                                    </div>
+
+                                {% endif %}
+
+                            </div>
+
+                        </div>
                     </div>
 
                 </div>
 
             </header>
-
-            <!-- ALERTAS -->
 
             {% with messages =
             get_flashed_messages(with_categories=true) %}
@@ -272,8 +378,6 @@
                 {% endif %}
 
             {% endwith %}
-
-            <!-- CONTEÚDO -->
 
             <section class="pagina">
 

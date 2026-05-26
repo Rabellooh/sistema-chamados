@@ -151,9 +151,9 @@
 
     <p>
 
-    {% if chamado.tecnicos %}
+    {% if tecnicos %}
 
-        {{ chamado.tecnicos | join(", ") }}
+        {{ tecnicos | join(", ") }}
 
     {% else %}
 
@@ -290,19 +290,23 @@
 
 <div class="acoes-detalhe">
 
-    <a
-        href="/assumir/{{ chamado.id }}"
-        class="btn-warning"
-    >
-        Assumir
-    </a>
+    {% if session.usuario.tipo == "ti" %}
 
-    <a
-        href="/finalizar/{{ chamado.id }}"
-        class="btn-success"
-    >
-        Finalizar
-    </a>
+        <a
+            href="/assumir/{{ chamado.id }}"
+            class="btn-warning"
+        >
+            Assumir
+        </a>
+
+        <a
+            href="/finalizar/{{ chamado.id }}"
+            class="btn-success"
+        >
+            Finalizar
+        </a>
+
+    {% endif %}
 
     <a
         href="/excluir/{{ chamado.id }}"

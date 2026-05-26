@@ -1,0 +1,49 @@
+/* =========================================================
+RESPONSIVO BASE
+========================================================= */
+
+@media(max-width:900px){
+
+    .layout{
+        flex-direction:column;
+    }
+
+    .sidebar{
+        width:100%;
+        min-width:100%;
+        height:auto;
+        position:relative;
+    }
+
+    .conteudo{
+        padding:16px;
+    }
+
+    .topbar{
+        flex-direction:column;
+        align-items:flex-start;
+    }
+
+    .topbar-direita{
+        width:100%;
+        justify-content:space-between;
+        flex-wrap:wrap;
+    }
+
+    .acoes-topbar{
+        flex-wrap:wrap;
+        margin-right:0;
+    }
+
+    .grid{
+        grid-template-columns:1fr;
+    }
+
+    .titulo{
+        font-size:28px;
+    }
+
+    table{
+        min-width:760px;
+    }
+}
