@@ -437,7 +437,7 @@ def dashboard():
 
     resolvidos = len([
         c for c in chamados
-        if c.status == "resolvido"
+        if c.status == "Finalizado"
     ])
 
     ranking_colaborador = Counter([
@@ -542,7 +542,7 @@ def dashboard():
 
                 FROM chamados
 
-                WHERE status != 'resolvido'
+                WHERE status != 'Finalizado'
                 AND maquina IS NOT NULL
 
                 LIMIT 10
@@ -835,10 +835,7 @@ def novo_chamado():
     if not usuario:
         return redirect("/login")
 
-    if usuario["tipo"] not in [
-        "colaborador",
-        "administracao",
-    ]:
+    if usuario["tipo"] == "ti":
         return redirect("/")
 
     if request.method == "POST":
@@ -1270,6 +1267,13 @@ def assumir_chamado(chamado_id):
 
         return redirect("/login")
 
+    if usuario["tipo"] not in [
+        "ti",
+        "administracao"
+    ]:
+
+        return redirect("/")
+
     existe = db.session.execute(
 
         db.text("""
@@ -1586,7 +1590,7 @@ def finalizar(id):
 
             UPDATE chamados
 
-            SET status = 'resolvido'
+            SET status = 'Finalizado'
 
             WHERE id = :id
 
@@ -2350,7 +2354,7 @@ def inventario():
 
             FROM chamados
 
-            WHERE status != 'resolvido'
+            WHERE status != 'Finalizado'
 
         """)
 
@@ -2735,49 +2739,94 @@ def editar_usuario(id):
 
     if request.method == "POST":
 
-        db.session.execute(
+        nova_senha = request.form.get("senha")
 
-            db.text("""
+        if nova_senha:
 
-                UPDATE usuarios
+            db.session.execute(
 
-                SET
+                db.text("""
 
-                    nome = :nome,
-                    senha = :senha,
-                    tipo = :tipo,
-                    setor = :setor,
-                    email = :email,
-                    ativo = :ativo
+                    UPDATE usuarios
 
-                WHERE id = :id
+                    SET
 
-            """),
+                        nome = :nome,
+                        senha = :senha,
+                        tipo = :tipo,
+                        setor = :setor,
+                        email = :email,
+                        ativo = :ativo
 
-            {
+                    WHERE id = :id
 
-                "id": id,
+                """),
 
-                "nome": request.form.get("nome"),
+                {
 
-                "senha": generate_password_hash(
-                    request.form.get("senha")
-                ),
+                    "id": id,
 
-                "tipo": request.form.get("tipo"),
+                    "nome": request.form.get("nome"),
 
-                "setor": request.form.get("setor"),
+                    "senha": generate_password_hash(
+                        nova_senha
+                    ),
 
-                "email": request.form.get("email"),
+                    "tipo": request.form.get("tipo"),
 
-                "ativo":
-                True if request.form.get("ativo")
-                == "true"
-                else False
+                    "setor": request.form.get("setor"),
 
-            }
+                    "email": request.form.get("email"),
 
-        )
+                    "ativo":
+                    True if request.form.get("ativo")
+                    == "true"
+                    else False
+
+                }
+
+            )
+
+        else:
+
+            db.session.execute(
+
+                db.text("""
+
+                    UPDATE usuarios
+
+                    SET
+
+                        nome = :nome,
+                        tipo = :tipo,
+                        setor = :setor,
+                        email = :email,
+                        ativo = :ativo
+
+                    WHERE id = :id
+
+                """),
+
+                {
+
+                    "id": id,
+
+                    "nome": request.form.get("nome"),
+
+                    "tipo": request.form.get("tipo"),
+
+                    "setor": request.form.get("setor"),
+
+                    "email": request.form.get("email"),
+
+                    "ativo":
+                    True if request.form.get("ativo")
+                    == "true"
+                    else False
+
+                }
+
+            )
 
         db.session.commit()
 
@@ -2943,7 +2992,7 @@ def importar_inventario():
         for _, row in df.iterrows():
 
             id_maquina = str(
-                row["ID"]
+                row.get("ID", "")
             )
 
             existe = db.session.execute(
@@ -3112,42 +3161,135 @@ def pesquisar_ativos():
         ""
     )
 
-    ativos = []
+    ram = request.args.get(
+        "ram",
+        ""
+    )
+
+    armazenamento = request.args.get(
+        "armazenamento",
+        ""
+    )
+
+    sistema = request.args.get(
+        "sistema",
+        ""
+    )
+
+    marca = request.args.get(
+        "marca",
+        ""
+    )
+
+    query = """
+
+        SELECT
+
+            id,
+            id_maquina,
+            marca,
+            modelo,
+            sistema_operacional,
+            memoria_ram,
+            armazenamento,
+            usuario_atual,
+            setor
+
+        FROM ativos
+
+        WHERE 1=1
+
+    """
+
+    params = {}
 
     if termo:
 
-        ativos = db.session.execute(
+        query += """
 
-            db.text("""
+            AND (
 
-                SELECT *
-
-                FROM ativos
-
-                WHERE
-
-                    LOWER(id_maquina)
-                    LIKE LOWER(:termo)
+                LOWER(id_maquina)
+                LIKE LOWER(:termo)
 
                 OR
 
-                    LOWER(usuario_atual)
-                    LIKE LOWER(:termo)
+                LOWER(usuario_atual)
+                LIKE LOWER(:termo)
 
                 OR
 
-                    LOWER(setor)
-                    LIKE LOWER(:termo)
+                LOWER(setor)
+                LIKE LOWER(:termo)
 
-                ORDER BY id DESC
+                OR
 
-            """),
+                LOWER(modelo)
+                LIKE LOWER(:termo)
 
-            {
-                "termo": f"%{termo}%"
-            }
+            )
 
-        ).fetchall()
+        """
+
+        params["termo"] = f"%{termo}%"
+
+    if ram:
+
+        query += """
+
+            AND LOWER(memoria_ram)
+            LIKE LOWER(:ram)
+
+        """
+
+        params["ram"] = f"%{ram}%"
+
+    if armazenamento:
+
+        query += """
+
+            AND LOWER(armazenamento)
+            LIKE LOWER(:armazenamento)
+
+        """
+
+        params["armazenamento"] = f"%{armazenamento}%"
+
+    if sistema:
+
+        query += """
+
+            AND LOWER(sistema_operacional)
+            LIKE LOWER(:sistema)
+
+        """
+
+        params["sistema"] = f"%{sistema}%"
+
+    if marca:
+
+        query += """
+
+            AND LOWER(marca)
+            LIKE LOWER(:marca)
+
+        """
+
+        params["marca"] = f"%{marca}%"
+
+    query += """
+
+        ORDER BY id DESC
+
+    """
+
+    ativos = db.session.execute(
+
+        db.text(query),
+
+        params
+
+    ).fetchall()
 
     return render_template(
 
@@ -3157,7 +3299,16 @@ def pesquisar_ativos():
 
         termo=termo,
 
+        ram=ram,
+
+        armazenamento=armazenamento,
+
+        sistema=sistema,
+
+        marca=marca,
+
         usuario=usuario
+
     )
 # =========================
 # EDITAR POSIÇÃO
@@ -3394,139 +3545,6 @@ def excluir_posicao(posicao):
         )
 
     return redirect("/")
-    # =========================
-    # SALVAR ALTERAÇÕES
-    # =========================
-
-    if request.method == "POST":
-
-        nova_maquina = request.form.get(
-            "maquina"
-        )
-
-        colaborador = request.form.get(
-            "colaborador"
-        )
-
-        nova_posicao = request.form.get(
-            "nova_posicao"
-        )
-
-        # limpa espaços
-        if nova_maquina:
-            nova_maquina = nova_maquina.strip()
-
-        if colaborador:
-            colaborador = colaborador.strip()
-
-        if nova_posicao:
-            nova_posicao = nova_posicao.strip()
-
-        db.session.execute(
-
-            db.text("""
-
-                UPDATE mapa_posicoes
-
-                SET
-
-                    maquina = :maquina,
-
-                    colaborador = :colaborador,
-
-                    posicao = :nova_posicao
-
-                WHERE posicao = :posicao
-
-            """),
-
-            {
-                "maquina": nova_maquina,
-                "colaborador": colaborador,
-                "nova_posicao": nova_posicao,
-                "posicao": posicao
-            }
-
-        )
-
-        db.session.commit()
-
-        flash(
-            "Posição atualizada com sucesso!",
-            "success"
-        )
-
-        sala_db = db.session.execute(
-
-            db.text("""
-
-                SELECT sala
-
-                FROM mapa_posicoes
-
-                WHERE posicao = :nova_posicao
-
-            """),
-
-            {
-                "nova_posicao": nova_posicao
-            }
-
-        ).fetchone()
-
-        if sala_db:
-
-            if sala_db.sala == "BL":
-
-                return redirect("/mapa_bl")
-
-            else:
-
-                return redirect("/mapa_hunter")
-
-        return redirect("/")
-
-    # =========================
-    # BUSCAR POSIÇÃO
-    # =========================
-
-    posicao_db = db.session.execute(
-
-        db.text("""
-
-            SELECT *
-
-            FROM mapa_posicoes
-
-            WHERE posicao = :posicao
-
-        """),
-
-        {
-            "posicao": posicao
-        }
-
-    ).fetchone()
-
-    # evita erro caso não exista
-    if not posicao_db:
-
-        flash(
-            "Posição não encontrada.",
-            "error"
-        )
-
-        return redirect("/")
-
-    return render_template(
-
-        "editar_posicao.html",
-
-        usuario=usuario,
-
-        posicao=posicao_db
-
-    )
 # =========================
 # EDITAR ATIVO
 # =========================
@@ -3707,7 +3725,7 @@ def mapa_hunter():
 
             FROM chamados
 
-            WHERE status != 'resolvido'
+            WHERE status != 'Finalizado'
 
         """)
 
@@ -3883,7 +3901,7 @@ def mapa_bl():
 
             FROM chamados
 
-            WHERE status != 'resolvido'
+            WHERE status != 'Finalizado'
 
         """)
 
@@ -4226,7 +4244,27 @@ def movimentar_maquina():
             return redirect(
                 "/movimentar_maquina"
             )
+        ativo_origem = None
 
+        if origem_db.maquina:
+
+            ativo_origem = db.session.execute(
+
+                db.text("""
+
+                    SELECT *
+
+                    FROM ativos
+
+                    WHERE id_maquina = :maquina
+
+                """),
+
+                {
+                    "maquina": origem_db.maquina
+                }
+
+            ).fetchone()
         # move dados
         db.session.execute(
 
@@ -4460,7 +4498,7 @@ def historico_maquina(id_maquina):
 
         c for c in chamados
 
-        if c.status.lower() != "finalizado"
+        if (c.status or "").lower() != "finalizado"
 
     ])
 
@@ -4468,7 +4506,7 @@ def historico_maquina(id_maquina):
 
         c for c in chamados
 
-        if c.status.lower() == "finalizado"
+        if (c.status or "").lower() == "finalizado"
 
     ])
 

@@ -621,3 +621,20 @@ CORREÇÃO DASHBOARD - CARDS INTERNOS
     color:#fca5a5;
     border:1px solid rgba(239,68,68,.24);
 }
+.inventario-grid{
+    display:grid;
+    grid-template-columns:
+        repeat(auto-fit,minmax(180px,1fr));
+    gap:14px;
+}
+
+.inventario-grid input{
+    width:100%;
+}
+
+.filtros-inventario{
+    display:flex;
+    flex-wrap:wrap;
+    gap:12px;
+    margin-bottom:20px;
+}

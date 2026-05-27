@@ -80,3 +80,42 @@ INVENTÁRIO
     border-color:rgba(56,213,255,.35);
     transform:translateY(-2px);
 }
+.pesquisa-inventario-card{
+    margin-bottom:24px;
+}
+
+.pesquisa-principal{
+    display:grid;
+    grid-template-columns:1fr auto;
+    gap:12px;
+    align-items:center;
+}
+
+.pesquisa-principal input{
+    width:100%;
+}
+
+.filtros-avancados{
+    margin-top:16px;
+}
+
+.filtros-avancados summary{
+    cursor:pointer;
+    color:#93c5fd;
+    font-weight:800;
+    width:max-content;
+}
+
+.filtros-avancados-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+    gap:12px;
+    margin-top:14px;
+}
+
+@media(max-width:700px){
+
+    .pesquisa-principal{
+        grid-template-columns:1fr;
+    }
+}

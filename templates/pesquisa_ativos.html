@@ -8,56 +8,50 @@
 
 <div class="filtros-inventario">
 
-    <a
-        href="/pesquisar_ativos?termo=BackOffice"
-        class="btn-setor"
-    >
+    <a href="/pesquisar_ativos?termo=BackOffice" class="btn-setor">
         Back Office
     </a>
 
-    <a
-        href="/pesquisar_ativos?termo=Hunter"
-        class="btn-setor"
-    >
+    <a href="/pesquisar_ativos?termo=Hunter" class="btn-setor">
         Hunter
     </a>
 
-    <a
-        href="/pesquisar_ativos?termo=BL"
-        class="btn-setor"
-    >
+    <a href="/pesquisar_ativos?termo=BL" class="btn-setor">
         BL
     </a>
 
-    <a
-        href="/pesquisar_ativos?termo=Farmer"
-        class="btn-setor"
-    >
+    <a href="/pesquisar_ativos?termo=Farmer" class="btn-setor">
         Farmer
     </a>
 
-    <a
-        href="/pesquisar_ativos"
-        class="btn-primary"
-    >
+    <a href="/pesquisar_ativos?termo=PÓS" class="btn-setor">
+        PÓS
+    </a>
+
+    <a href="/pesquisar_ativos?termo=TI" class="btn-setor">
+        TI
+    </a>
+
+    <a href="/pesquisar_ativos?termo=ADMIN" class="btn-setor">
+        ADMIN
+    </a>
+
+    <a href="/pesquisar_ativos" class="btn-primary">
         Limpar
     </a>
 
 </div>
 
-<div class="card">
+<div class="card pesquisa-inventario-card">
 
-    <form
-        method="GET"
-        class="form-busca"
-    >
+    <form method="GET">
 
-        <div class="grid-form">
+        <div class="pesquisa-principal">
 
             <input
                 type="text"
                 name="termo"
-                placeholder="Pesquisar por ID, usuário ou setor..."
+                placeholder="Pesquisar por ID, usuário, setor ou modelo..."
                 value="{{ termo }}"
             >
 
@@ -70,6 +64,46 @@
 
         </div>
 
+        <details class="filtros-avancados">
+
+            <summary>
+                Filtros avançados
+            </summary>
+
+            <div class="filtros-avancados-grid">
+
+                <input
+                    type="text"
+                    name="ram"
+                    placeholder="RAM: 4GB, 8GB, 16GB..."
+                    value="{{ ram }}"
+                >
+
+                <input
+                    type="text"
+                    name="armazenamento"
+                    placeholder="Armazenamento: SSD, 256GB..."
+                    value="{{ armazenamento }}"
+                >
+
+                <input
+                    type="text"
+                    name="sistema"
+                    placeholder="Sistema: Windows 11..."
+                    value="{{ sistema }}"
+                >
+
+                <input
+                    type="text"
+                    name="marca"
+                    placeholder="Marca: Dell, Lenovo..."
+                    value="{{ marca }}"
+                >
+
+            </div>
+
+        </details>
+
     </form>
 
 </div>
@@ -78,32 +112,22 @@
 
 <div class="card">
 
-    <div style="overflow-x:auto;">
+    <div class="tabela-container">
 
         <table class="tabela">
 
             <thead>
 
                 <tr>
-
                     <th>ID</th>
-
                     <th>Marca</th>
-
                     <th>Modelo</th>
-
                     <th>Sistema</th>
-
                     <th>RAM</th>
-
                     <th>Armazenamento</th>
-
                     <th>Usuário</th>
-
                     <th>Setor</th>
-
                     <th>Ações</th>
-
                 </tr>
 
             </thead>
@@ -113,34 +137,23 @@
                 {% for a in ativos %}
 
                 <tr>
-
                     <td>{{ a.id_maquina }}</td>
-
                     <td>{{ a.marca }}</td>
-
                     <td>{{ a.modelo }}</td>
-
                     <td>{{ a.sistema_operacional }}</td>
-
                     <td>{{ a.memoria_ram }}</td>
-
                     <td>{{ a.armazenamento }}</td>
-
                     <td>{{ a.usuario_atual }}</td>
-
                     <td>{{ a.setor }}</td>
 
                     <td>
-
                         <a
                             href="/editar_ativo/{{ a.id }}"
                             class="btn-editar"
                         >
                             Editar
                         </a>
-
                     </td>
-
                 </tr>
 
                 {% endfor %}
