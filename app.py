@@ -3159,27 +3159,38 @@ def pesquisar_ativos():
     termo = request.args.get(
         "termo",
         ""
-    )
+    ).strip()
 
     ram = request.args.get(
         "ram",
         ""
-    )
+    ).strip()
 
     armazenamento = request.args.get(
         "armazenamento",
         ""
-    )
+    ).strip()
 
     sistema = request.args.get(
         "sistema",
         ""
-    )
+    ).strip()
 
     marca = request.args.get(
         "marca",
         ""
-    )
+    ).strip()
+
+    setores_fixos = [
+        "backoffice",
+        "hunter",
+        "bl",
+        "farmer",
+        "pós",
+        "pos",
+        "ti",
+        "admin"
+    ]
 
     query = """
 
@@ -3205,33 +3216,50 @@ def pesquisar_ativos():
 
     if termo:
 
-        query += """
+        if termo.lower() in setores_fixos:
 
-            AND (
+            query += """
 
-                LOWER(id_maquina)
-                LIKE LOWER(:termo)
+                AND LOWER(setor) = LOWER(:termo)
 
-                OR
+            """
 
-                LOWER(usuario_atual)
-                LIKE LOWER(:termo)
+            params["termo"] = termo
 
-                OR
+        else:
 
-                LOWER(setor)
-                LIKE LOWER(:termo)
+            query += """
 
-                OR
+                AND (
 
-                LOWER(modelo)
-                LIKE LOWER(:termo)
+                    LOWER(id_maquina)
+                    LIKE LOWER(:termo)
 
-            )
+                    OR
 
-        """
+                    LOWER(usuario_atual)
+                    LIKE LOWER(:termo)
 
-        params["termo"] = f"%{termo}%"
+                    OR
+
+                    LOWER(setor)
+                    LIKE LOWER(:termo)
+
+                    OR
+
+                    LOWER(modelo)
+                    LIKE LOWER(:termo)
+
+                    OR
+
+                    LOWER(marca)
+                    LIKE LOWER(:termo)
+
+                )
+
+            """
+
+            params["termo"] = f"%{termo}%"
 
     if ram:
 
@@ -3284,11 +3312,8 @@ def pesquisar_ativos():
     """
 
     ativos = db.session.execute(
-
         db.text(query),
-
         params
-
     ).fetchall()
 
     return render_template(
@@ -3310,6 +3335,86 @@ def pesquisar_ativos():
         usuario=usuario
 
     )
+@app.route(
+    "/chamado_rapido",
+    methods=["GET", "POST"]
+)
+def chamado_rapido():
+
+    if request.method == "POST":
+
+        descricao = request.form.get("descricao", "")
+        maquina = request.form.get("maquina", "")
+        local = request.form.get("local", "")
+
+        db.session.execute(
+            db.text("""
+                INSERT INTO chamados (
+                    usuario,
+                    descricao,
+                    setor,
+                    maquina,
+                    status,
+                    categoria,
+                    solucao,
+                    origem,
+                    local_informado
+                )
+                VALUES (
+                    'Não identificado',
+                    :descricao,
+                    'Pendente',
+                    :maquina,
+                    'aberto',
+                    '',
+                    '',
+                    'QR Code',
+                    :local
+                )
+            """),
+            {
+                "descricao": descricao,
+                "maquina": maquina,
+                "local": local
+            }
+        )
+
+        chamado_criado = db.session.execute(
+            db.text("""
+                SELECT id
+                FROM chamados
+                WHERE origem = 'QR Code'
+                ORDER BY id DESC
+                LIMIT 1
+            """)
+        ).fetchone()
+
+        if chamado_criado:
+
+            tecnicos = db.session.execute(
+                db.text("""
+                    SELECT id
+                    FROM usuarios
+                    WHERE tipo IN ('ti')
+                    AND ativo = true
+                """)
+            ).fetchall()
+
+            for tecnico in tecnicos:
+
+                criar_notificacao(
+                    usuario_id=tecnico.id,
+                    titulo="Chamado rápido aberto",
+                    mensagem=f"Um chamado via QR Code foi aberto. #{chamado_criado.id}",
+                    tipo="chamado",
+                    link=f"/chamado/{chamado_criado.id}"
+                )
+
+        db.session.commit()
+
+        return render_template("chamado_rapido_sucesso.html")
+
+    return render_template("chamado_rapido.html")
 # =========================
 # EDITAR POSIÇÃO
 # =========================
@@ -4367,6 +4472,148 @@ def movimentar_maquina():
         posicoes=posicoes
 
     )
+# =========================
+# NOVO ATIVO
+# =========================
+
+@app.route(
+    "/novo_ativo",
+    methods=["GET", "POST"]
+)
+def novo_ativo():
+
+    usuario = session.get("usuario")
+
+    if not usuario:
+        return redirect("/login")
+
+    if usuario["tipo"] != "ti":
+        return redirect("/")
+
+    if request.method == "POST":
+
+        db.session.execute(
+
+            db.text("""
+
+                INSERT INTO ativos (
+
+                    id_maquina,
+                    marca,
+                    modelo,
+                    sistema_operacional,
+                    memoria_ram,
+                    armazenamento,
+                    usuario_atual,
+                    setor
+
+                )
+
+                VALUES (
+
+                    :id_maquina,
+                    :marca,
+                    :modelo,
+                    :sistema,
+                    :ram,
+                    :armazenamento,
+                    :usuario,
+                    :setor
+
+                )
+
+            """),
+
+            {
+
+                "id_maquina":
+                request.form.get("id_maquina"),
+
+                "marca":
+                request.form.get("marca"),
+
+                "modelo":
+                request.form.get("modelo"),
+
+                "sistema":
+                request.form.get(
+                    "sistema_operacional"
+                ),
+
+                "ram":
+                request.form.get("memoria_ram"),
+
+                "armazenamento":
+                request.form.get(
+                    "armazenamento"
+                ),
+
+                "usuario":
+                request.form.get(
+                    "usuario_atual"
+                ),
+
+                "setor":
+                request.form.get("setor")
+
+            }
+
+        )
+
+        db.session.commit()
+
+        flash(
+            "Ativo criado!",
+            "success"
+        )
+
+        return redirect("/inventario")
+
+    return render_template(
+        "novo_ativo.html",
+        usuario=usuario
+    )
+# =========================
+# EXCLUIR ATIVO
+# =========================
+
+@app.route(
+    "/excluir_ativo/<int:id>"
+)
+def excluir_ativo(id):
+
+    usuario = session.get("usuario")
+
+    if not usuario:
+        return redirect("/login")
+
+    if usuario["tipo"] != "ti":
+        return redirect("/")
+
+    db.session.execute(
+
+        db.text("""
+
+            DELETE FROM ativos
+
+            WHERE id = :id
+
+        """),
+
+        {
+            "id": id
+        }
+
+    )
+
+    db.session.commit()
+
+    flash(
+        "Ativo excluído!",
+        "success"
+    )
+
+    return redirect("/inventario")
 
 # =========================
 # HISTÓRICO MAPA

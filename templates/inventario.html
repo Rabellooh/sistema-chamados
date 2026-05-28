@@ -5,6 +5,7 @@
 <h1 class="titulo">
     Inventário de Máquinas
 </h1>
+
 <div class="resumo-operacional">
 
     <div class="card-resumo">
@@ -31,106 +32,111 @@
 
 <div class="filtros-inventario">
 
-    <a
-        href="/pesquisar_ativos?termo=backoffice"
-        class="btn-setor"
-    >
+    <a href="/pesquisar_ativos?termo=backoffice" class="btn-setor">
         Back Office
     </a>
 
-    <a
-        href="/pesquisar_ativos?termo=hunter"
-        class="btn-setor"
-    >
+    <a href="/pesquisar_ativos?termo=hunter" class="btn-setor">
         Hunter
     </a>
 
-    <a
-        href="/pesquisar_ativos?termo=bl"
-        class="btn-setor"
-    >
+    <a href="/pesquisar_ativos?termo=bl" class="btn-setor">
         BL
     </a>
 
-    <a
-        href="/pesquisar_ativos?termo=farmer"
-        class="btn-setor"
-    >
+    <a href="/pesquisar_ativos?termo=farmer" class="btn-setor">
         Farmer
     </a>
 
-    <a
-        href="/pesquisar_ativos"
-        class="btn-primary"
-    >
+    <a href="/pesquisar_ativos?termo=pós" class="btn-setor">
+        PÓS
+    </a>
+
+    <a href="/pesquisar_ativos" class="btn-primary">
         Pesquisa Avançada
+    </a>
+
+    <a
+        href="/novo_ativo"
+        class="btn-success"
+    >
+        + Novo Ativo
     </a>
 
 </div>
 
-<div class="card">
+<div class="inventario-lista">
 
-    <div style="
-        overflow-x:auto;
-    ">
+    {% for a in ativos %}
 
-        <table class="tabela">
+    <div class="ativo-card">
 
-            <thead>
+        <div class="ativo-topo">
 
-                <tr>
+            <div>
 
-                    <th>ID</th>
+                <span class="ativo-id">
+                    #{{ a.id_maquina }}
+                </span>
 
-                    <th>Marca</th>
+                <h3>
+                    {{ a.marca }} {{ a.modelo }}
+                </h3>
 
-                    <th>Modelo</th>
+            </div>
 
-                    <th>Sistema</th>
+            <span class="ativo-setor">
+                {{ a.setor }}
+            </span>
 
-                    <th>RAM</th>
+        </div>
 
-                    <th>Armazenamento</th>
+        <div class="ativo-info-grid">
 
-                    <th>Usuário</th>
+            <div>
+                <small>Sistema</small>
+                <strong>
+                    {{ a.sistema_operacional }}
+                </strong>
+            </div>
 
-                    <th>Setor</th>
+            <div>
+                <small>RAM</small>
+                <strong>
+                    {{ a.memoria_ram }}
+                </strong>
+            </div>
 
-                </tr>
+            <div>
+                <small>Armazenamento</small>
+                <strong>
+                    {{ a.armazenamento }}
+                </strong>
+            </div>
 
-            </thead>
+            <div>
+                <small>Usuário</small>
+                <strong>
+                    {{ a.usuario_atual }}
+                </strong>
+            </div>
 
-            <tbody>
+        </div>
 
-                {% for a in ativos %}
+        <div class="ativo-acoes">
 
-                <tr>
+            <a
+                href="/editar_ativo/{{ a.id }}"
+                class="btn-mini btn-mini-edit"
+            >
+                Editar
+            </a>
 
-                    <td>{{ a.id_maquina }}</td>
-
-                    <td>{{ a.marca }}</td>
-
-                    <td>{{ a.modelo }}</td>
-
-                    <td>{{ a.sistema_operacional }}</td>
-
-                    <td>{{ a.memoria_ram }}</td>
-
-                    <td>{{ a.armazenamento }}</td>
-
-                    <td>{{ a.usuario_atual }}</td>
-
-                    <td>{{ a.setor }}</td>
-
-                </tr>
-
-                {% endfor %}
-
-            </tbody>
-
-        </table>
+        </div>
 
     </div>
+
+    {% endfor %}
 
 </div>
 

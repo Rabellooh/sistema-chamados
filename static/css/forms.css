@@ -45,3 +45,42 @@ textarea{
     font-size:14px;
     font-weight:600;
 }
+.grid-form{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
+    gap:18px;
+}
+
+.grid-form input,
+.grid-form select,
+.grid-form textarea{
+    width:100%;
+    min-height:52px;
+}
+
+.btn-salvar{
+    margin-top:22px;
+    min-height:48px;
+    padding:0 22px;
+    border:none;
+    border-radius:16px;
+    background:linear-gradient(135deg,#22c55e,#4ade80);
+    color:white;
+    font-size:15px;
+    font-weight:900;
+    cursor:pointer;
+}
+
+.btn-secondary{
+    min-height:48px;
+    padding:0 22px;
+    border-radius:16px;
+    background:rgba(255,255,255,.06);
+    border:1px solid var(--border);
+    color:white;
+    font-size:15px;
+    font-weight:900;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+}
